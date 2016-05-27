@@ -33,7 +33,8 @@ class Dispatcher {
 	}
 
 	broadcast(message, data) {
-		Logic.callEachListenerWithArgs(message, data);
+		Logic.log(this, `broadcasting ${ message }`)
+		     .callEachListenerWithArgs(message, data);
 	}
 }
 

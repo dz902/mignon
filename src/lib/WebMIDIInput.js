@@ -91,10 +91,12 @@ class _Logic extends BasicLogic {
 
 			switch (processedMessage.type) {
 				case 'NOTE_ON':
-					Logic.markNoteAsActiveAndBroadcast(processedMessage);
+					Logic.log(_instance, 'note on ', processedMessage)
+					     .markNoteAsActiveAndBroadcast(processedMessage);
 					break;
 				case 'NOTE_OFF':
 					Logic.setNoteDuration(processedMessage)
+					     .log(_instance, 'note off ', processedMessage)
 			    	   .markNoteAsInactiveAndBroadcast(processedMessage);
 					break;
 			}
@@ -161,7 +163,7 @@ class _Logic extends BasicLogic {
 			case 'NOTE_OFF':
 				return this.processNoteMessage(data, receivedTime);
 			default:
-				// no op
+				return {};
 		}
 	}		
 
@@ -213,4 +215,4 @@ class _Logic extends BasicLogic {
 
 var Logic = new _Logic();
 
-module.exports = WebMIDIInput;
+module.exports = new WebMIDIInput();

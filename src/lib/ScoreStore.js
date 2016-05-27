@@ -61,7 +61,7 @@ class ScoreStore extends Store {
 				for (let n of note) {
 					let [ , step, accidental, octave ] = n.pitch.match(/^([A-Ga-g])(b|bb|#|##|n)?\/([0-9]|10)$/);
 
-					n.noteNumber = (STEP_NAMES.indexOf(step)+1) + parseInt(octave)*12;
+					n.noteNumber = (STEP_NAMES.indexOf(step)) + parseInt(octave)*12 + 1;
 				}
 			}
 		}

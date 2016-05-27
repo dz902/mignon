@@ -22,7 +22,7 @@ let _storeInstance = null;
 
 // STATE
 
-let _noteSequence = [];
+let _noteSequence = Immutable.List();
 
 // PUBLIC
 
@@ -38,7 +38,7 @@ class NoteSequenceStore extends Store {
 	// GETTER
 
 	get noteSequence() {
-		return Immutable.fromJS(_noteSequence);
+		return _noteSequence;
 	}
 
 	get noteSequenceWithChords() {
@@ -46,8 +46,7 @@ class NoteSequenceStore extends Store {
 			return this.noteSequence;
 		}
 
-		let chordTimeBound = 0,
-		    noteSequence = Immutable.fromJS(_noteSequence);
+		let chordTimeBound = 0, noteSequence = _noteSequence;
 
 		let noteSequenceWithChords = noteSequence.reduce(function(reduction, value) {
 			// first run

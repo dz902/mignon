@@ -31,16 +31,13 @@ class InstrumentListStore extends Store {
 	constructor() {
 		super();
 
-		_input = new WebMIDIInput();
-
 		Dispatcher.listen(function(messageType, data) {
 			switch (messageType) {
 				case MIDI.ACCESS_OK:
 					break;
 				case MIDI.DEVICE_CONNECTED:
-					let device = data;
-					
-					_input.activateDevice(device); // TODO: this should not be here
+					// TODO: not here
+					WebMIDIInput.activateDevice(data);
 					break;
 				case UI.SELECT_DEVICE:
 					// TODO: above should be here

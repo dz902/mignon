@@ -8,7 +8,7 @@ var Score = require('./components/score.vue');
 
 
 var Dispatcher = require('./lib/Dispatcher.js');
-var MMIDIInput = require('./lib/MIDIInput.js');
+var WebMIDIInput = require('./lib/WebMIDIInput.js');
 var ScoreStore = require('./lib/ScoreStore.js');
 var ScoreView = require('./lib/ScoreView.js');
 
@@ -72,11 +72,9 @@ Zepto(function($) {
 
 	var TickerStore = require('./lib/TickerStore.js');
 	//TickerStore = new TickerStore();
-
-	var NoteSequenceStore = require('./lib/NoteSequenceStore.js');
-	NoteSequenceStore = new NoteSequenceStore();
 	
+
 	var PerformanceStore = require('./lib/PerformanceStore.js');
-	PerformanceStore = new PerformanceStore(score, NoteSequenceStore);
+	PerformanceStore = new PerformanceStore(score);
 });
 
