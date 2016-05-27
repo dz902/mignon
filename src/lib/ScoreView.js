@@ -45,13 +45,14 @@ class ScoreView {
 
 				vexVoice.addTickable(vexNote);
   			
-  			// Format and justify the notes to 500 pixels
-
-  			this.formatter.joinVoices([vexVoice])
-  		              	.formatToStave([vexVoice], stave);
-                			
-  			vexVoice.draw(ctx, stave);
 			}
+
+  		// Format and justify the notes to 500 pixels
+
+  		this.formatter.joinVoices([vexVoice])
+  		              .formatToStave([vexVoice], stave);
+                		
+  		vexVoice.draw(ctx, stave);
 		}
 	}
 
@@ -73,10 +74,10 @@ class ScoreView {
 				let chordKeys = [];
 				let notes = mark.get('notes');
 				notes.forEach((v, i) => chordKeys.push(`${ v.get('pitch') }`));
+				vexNote = new Vex.Flow.StaveNote({ keys: chordKeys, duration: attr.get('duration') });
 				
 				notes.forEach(function(note, i) {
 					let [ , step, accidental ] = note.get('pitch').match(/^([A-Ga-g](b|bb|#|##|n)?\/(?:[0-9]|10))$/);
-					vexNote = new Vex.Flow.StaveNote({ keys: chordKeys, duration: attr.get('duration') });
 					
 					if (accidental) {
 						vexNote.addAccidental(i, new Vex.Flow.Accidental(accidental));

@@ -17,7 +17,11 @@ var BasicLogic = require('./BasicLogic.js');
 
 let _scoreStore = null,
     _noteSequenceStore = null,
-    _noteOnSequenceCache = null;
+    _notesByBeat = null;
+
+// STATE
+
+let _performanceScore = null;
 
 // PUBLIC
 
@@ -25,12 +29,16 @@ class PerformanceStore extends Store {
 	constructor(scoreStore, noteSequenceStore) {
 		super();
 
-		_scoreStore = scoreStore;
+		scoreStore.observeChangesThen((newStore) => _scoreStore);
 		noteSequenceStore.observeChangesThen((newStore) => this.trackPerformance(newStore));
+
+		_scoreStore = scoreStore;
+		_noteSequenceStore = noteSequenceStore;
 	}
 
 	trackPerformance(noteSequenceStore) {
 		Logic.log(this, 'Tracking performance')
+		     .groupNotesByBeats(_scoreStore.score.toJS())
 		     .checkPlayedNotesForOccurence(noteSequenceStore);
 	}
 }
@@ -38,24 +46,119 @@ class PerformanceStore extends Store {
 // DETAILED LOGIC
 
 class _Logic extends BasicLogic {
-	checkPlayedNotesForOccurence(noteSequenceStore) {
-		let noteOnOnlySequence = noteSequenceStore.noteSequence
-		                                          .filter(note => note.get('type') == 'NOTE_ON');
+	groupNotesByBeats(score) {
+		var notesByBeat = {};
 
-		if (!_noteOnSequenceCache) {
-			_noteOnSequenceCache = noteOnOnlySequence;
-		} else if (noteOnOnlySequence.equals(_noteOnSequenceCache)) {
+		for (let voice of score.voices) {
+			let currentBeat = Fraction(0).toString();
+			
+			for (let note of voice) {
+				if (!notesByBeat[currentBeat]) notesByBeat[currentBeat] = [];
+			
+				switch (note.type) {
+					case 'NOTE':
+						notesByBeat[currentBeat].push(note);
+						break;
+					case 'CHORD':
+						for (let n of note.notes) notesByBeat[currentBeat].push(n);
+						break;
+					default:
+						throw new Error('Unknown type.');
+				}
+			
+				var exactDuration = Fraction(1, note.duration);
+
+				currentBeat = Fraction(currentBeat).add(exactDuration);
+			}
+		}
+
+		_notesByBeat = notesByBeat;
+
+		return this;
+	}
+	
+	checkPlayedNotesForOccurence(noteSequenceStore) {
+		let isNoteOff = noteSequenceStore.noteSequence.last().get('type') == 'NOTE_OFF';
+
+		if (isNoteOff) {
 			return;
 		}
 
-		let notesByBeatList = _scoreStore.notesByBeat.toList();
-		
-		noteOnOnlySequence.zipWith(function(playedNote, scoreNote) {
-			console.info('played');
-			console.log('score');
+		let noteOnOnlySequence = noteSequenceStore.noteSequenceWithChords
+		                                          .filterNot(note => note.get('type') == 'NOTE_OFF');
+
+		let notesByBeatList = Immutable.fromJS(_notesByBeat).toList();
+
+		let _performanceScore = noteOnOnlySequence.zipWith(function(playedNote, scoreNote) {
+			console.info('played', playedNote);
+			console.log('score', scoreNote);
+			
+			if (!Immutable.List.isList(playedNote)) {
+				playedNote = Immutable.List([playedNote].fill(null, 1, scoreNote.size-1));
+			}
+
+			if (scoreNote.size > playedNote.size) {
+				playedNote = playedNote.concat([scoreNote.size-playedNote.size].fill(null));
+			} else if (scoreNote.size < playedNote.size) {
+				scoreNote = scoreNote.concat([playedNote.size-scoreNote.size].fill(null));
+			}
+
+			return playedNote.zipWith(function(p, s) {
+				let performanceNote = {};
+
+				if (s === null) {
+					// extra note
+					
+					performanceNote = {
+						type: 'NOTE',
+						pitch: p.get('pitch'),
+						duration: '?',
+						performance: {
+							extra: true
+						}
+					};
+				} else if (p === null) {
+					// missing note
+					
+					performanceNote = {
+						type: 'NOTE',
+						pitch: s.get('pitch'),
+						duration: s.get('duration'), // TODO: get duration from note off
+						performance: {
+							missing: true
+						}
+					};
+				} else if (p.get('noteNumber') != s.get('noteNumber')) { // TODO: compare note number instead of pitch mark
+					performanceNote = {
+						type: 'NOTE',
+						pitch: s.get('pitch'),
+						duration: s.get('duration'),
+						performance: {
+							pitch: p.get('pitch') // TODO: get offset?
+						}
+					};
+				} else {
+					performanceNote = {
+						type: 'NOTE',
+						pitch: s.get('pitch'),
+						duration: s.get('duration'),
+						performance: {
+							// TODO: duration? evenness? timing? speed?
+						}
+					};
+				}
+
+				if (p !== null) {
+					performanceNote.performance.timing = p.get('receivedTime');
+				}
+
+				console.log('p', p); console.log('s', s);
+
+				return performanceNote;
+			}, scoreNote);
 		}, notesByBeatList);
 
-		_noteOnSequenceCache = noteOnOnlySequence; // update cache
+		console.log(_performanceScore);
 	}
 }
 

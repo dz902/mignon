@@ -67,7 +67,8 @@ Zepto(function($) {
 	model -> raw data -> state -> view
 	tick -> message -> received by model -> updater -> state -> view
 	*/
-	var MIDIInput = new MMIDIInput();
+	var InstrumentListStore = require('./lib/InstrumentListStore.js');
+	InstrumentListStore = new InstrumentListStore();
 
 	var TickerStore = require('./lib/TickerStore.js');
 	//TickerStore = new TickerStore();

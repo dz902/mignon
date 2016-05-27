@@ -12,6 +12,10 @@ var Fraction = require('fraction.js');
 
 var Store = require('./Store.js');
 
+// CONSTANT
+
+const STEP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
 // PRIVATE
 
 let _score = Immutable.Map();
@@ -23,72 +27,57 @@ class ScoreStore extends Store {
 	constructor() {
 		super();
 
-		var Mark = Immutable.Record({
-			type: 'NOTE',
-			properties: Immutable.Map({
-				pitch: 'C/4',
-				duration: '4'
-			})
-		}); 
-
-		_score = Immutable.fromJS({
-			'voices': [
-				[
-					{ type: 'NOTE', pitch: 'C#/4', duration: '4' }, 
-					{ type: 'CHORD', duration: '2', notes:
-						[
-							{ type: 'NOTE', pitch: 'C#/5', duration: '4' },
-							{ type: 'NOTE', pitch: 'E#/5', duration: '4' }
-						]
-					}
-				]
-			]
-		});
-
-		this.groupNotesByBeats();
+		this.parseScore();
 	}
 
 	// METHODS
 
-	groupNotesByBeats() {
-		var notesByBeat = {};
+	parseScore() {
+		_score = {
+			'voices': [
+				[
+					{ type: 'NOTE', pitch: 'C#/4', duration: '4' }, 
+					{ type: 'NOTE', pitch: 'F#/4', duration: '4' }, 
+					{ type: 'NOTE', pitch: 'B/4', duration: '4' }, 
+					{ type: 'CHORD', duration: '2', notes:
+						[
+							{ type: 'NOTE', pitch: 'C#/5', duration: '4' },
+							{ type: 'NOTE', pitch: 'F#/5', duration: '4' },
+							{ type: 'NOTE', pitch: 'G#/5', duration: '4' }
+						]
+					}
+				]
+			]
+		};
 
-		for (let voice of _score.get('voices')) {
-			let currentBeat = Fraction(0).toString();
-			
+		for (let voice of _score.voices) {
 			for (let note of voice) {
-				if (!notesByBeat[currentBeat]) notesByBeat[currentBeat] = [];
-			
-				switch (note.get('type')) {
-					case 'NOTE':
-						notesByBeat[currentBeat].push(note);
-						break;
-					case 'CHORD':
-						for (let n of note.get('notes')) notesByBeat[currentBeat].push(n);
-						break;
-					default:
-						throw new Error('Unknown type.');
+				if (note.type == 'NOTE') {
+					note = [note];
+				} else if (note.type == 'CHORD') {
+					note = note.notes;
 				}
-			
-				var exactDuration = Fraction(1, note.get('duration'));
 
-				currentBeat = Fraction(currentBeat).add(exactDuration);
+				for (let n of note) {
+					let [ , step, accidental, octave ] = n.pitch.match(/^([A-Ga-g])(b|bb|#|##|n)?\/([0-9]|10)$/);
+
+					n.noteNumber = (STEP_NAMES.indexOf(step)+1) + parseInt(octave)*12;
+				}
 			}
 		}
-
-		_notesByBeat = Immutable.fromJS(notesByBeat);
 	}
+
 
 	// MSGS
 
 	// GETTERS
 
 	get score() {
-		return _score;
+		return Immutable.fromJS(_score);
 	}
 	
 	get notesByBeat() {
-		return _notesByBeat;
+		return Immutable.fromJS(_notesByBeat);
 	}
 }
 

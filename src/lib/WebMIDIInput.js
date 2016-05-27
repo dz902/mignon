@@ -64,6 +64,8 @@ class _Logic extends BasicLogic {
 	initializeWithAccess(access) {
 		_access = access;
 
+		Dispatcher.broadcast(MIDI.ACCESS_OK, _instance);
+		
 		_access.onstatechange = function(connectionEvent) {
 			let device = connectionEvent.port;
 
@@ -71,15 +73,19 @@ class _Logic extends BasicLogic {
 				return;
 			}
 
-			Logic.checkDeviceStatusAndBroadcast(device);
-		};
+			this.checkDeviceStatusAndBroadcast(device);
+		}.bind(this);
 
-		Dispatcher.broadcast(MIDI.ACCESS_OK, _instance);
+		// initial check for devices already connected
+
+		for (let device of _access.inputs.values()) {
+			this.checkDeviceStatusAndBroadcast(device);
+		}
 
 		return this;
 	}
 
-	listenDevice(device) {
+	listenToDevice(device) {
 		device.onmidimessage = function(messageEvent) {
 			var processedMessage = Logic.processMIDIMessage(messageEvent.data, messageEvent.receivedTime);
 
@@ -123,13 +129,13 @@ class _Logic extends BasicLogic {
 		_activeNotes[message.channel][message.noteNumber] = message;
 		
 		this.makeImmutableAndBroadcast(MIDI.NOTE_ON, message);
-console.log('on');
+
 		return this;
 	}
 
 	markNoteAsInactiveAndBroadcast(message) {
 		_activeNotes[message.channel][message.noteNumber] = null;
-console.log('off');
+		
 		this.makeImmutableAndBroadcast(MIDI.NOTE_OFF, message);
 		
 		return this;
@@ -207,4 +213,4 @@ console.log('off');
 
 var Logic = new _Logic();
 
-module.exports = MIDIInput;
+module.exports = WebMIDIInput;

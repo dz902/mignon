@@ -11,7 +11,7 @@ class BasicLogic {
 	}
 
 	log(caller, message, ...args) {
-		console.log(`[${ caller.constructor.name }] ${ message }.`, ...args);
+		// console.log(`[${ caller.constructor.name }] ${ message }.`, ...args);
 
 		return this;
 	}
