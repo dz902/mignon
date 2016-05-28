@@ -42,6 +42,9 @@ class ScoreStore extends Store {
 		}
 
 		_score = {
+			'properties': {
+
+			},
 			'voices': [
 				[
 					{ type: 'CHORD', duration: '4', notes:
@@ -68,6 +71,7 @@ class ScoreStore extends Store {
 							{ type: 'NOTE', pitch: 'G/5', duration: '4' },
 						]
 					},
+					{ type: 'BAR' },
 					{ type: 'NOTE', pitch: 'C#/4', duration: '4' }, 
 					{ type: 'NOTE', pitch: 'F#/4', duration: '4' }, 
 					{ type: 'NOTE', pitch: 'B/4', duration: '4' }, 
@@ -78,6 +82,15 @@ class ScoreStore extends Store {
 							{ type: 'NOTE', pitch: 'G#/5', duration: '4' }
 						]
 					}
+				],
+				[
+					{ type: 'SPACER' },
+					{ type: 'SPACER' },
+					{ type: 'SPACER' },
+					{ type: 'BAR' },
+					{ type: 'NOTE', pitch: 'F#/5', duration: '4' },
+					{ type: 'NOTE', pitch: 'F#/6', duration: '8' },
+					{ type: 'NOTE', pitch: 'B#/6', duration: '8' }
 				]
 			]
 		};
@@ -90,6 +103,8 @@ class ScoreStore extends Store {
 					note = [note];
 				} else if (note.type == 'CHORD') {
 					note = note.notes;
+				} else {
+					continue;
 				}
 
 				for (let n of note) {

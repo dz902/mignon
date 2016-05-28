@@ -95,7 +95,7 @@ class _Logic extends BasicLogic {
 						});
 						break;
 					default:
-						throw new Error('Unknown type.');
+						return;
 				}
 			
 				var exactDuration = Fraction(1, note.get('duration'));
