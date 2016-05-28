@@ -15,6 +15,10 @@ module.exports = {
 			{ test: /\.vue$/, loader: 'vue' }
 		]
 	},
+
+	node: {
+		fs: 'empty'
+	},
 	
   plugins: [ new HTMLWebpackPlugin ({
 	}) ],

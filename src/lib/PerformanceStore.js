@@ -123,6 +123,8 @@ class _Logic extends BasicLogic {
 		let notesByBeatList = _notesByBeat.toList();
 
 		let _performanceScore = noteOnOnlySequence.zipWith(function(playedNote, scoreNote) {
+			// uniforming played notes as Lists
+
 			if (!Immutable.List.isList(playedNote)) {
 				playedNote = Immutable.List([playedNote]);
 			}
@@ -130,12 +132,14 @@ class _Logic extends BasicLogic {
 			console.info('played', playedNote);
 			console.log('score', scoreNote);
 
+			// rearrange notes so they are aligned to score notes of same pitch
+
 			let rearrangedPlayedNote = Immutable.List();
 			
 			scoreNote.forEach(function(note, i) {
 				var correspondingNoteIndex = playedNote.findIndex(n => n.get('noteNumber') == note.get('noteNumber'));
 				
-				if (correspondingNoteIndex < 1) {
+				if (correspondingNoteIndex < 0) {
 					return;
 				}
 
@@ -145,6 +149,8 @@ class _Logic extends BasicLogic {
 			
 			rearrangedPlayedNote = rearrangedPlayedNote.concat(playedNote);
 			console.log('con', rearrangedPlayedNote);
+
+			// before zipping, stuff both sides with null
 
 			if (scoreNote.size > rearrangedPlayedNote.size) {
 				rearrangedPlayedNote = rearrangedPlayedNote.concat(new Array(scoreNote.size-rearrangedPlayedNote.size));
