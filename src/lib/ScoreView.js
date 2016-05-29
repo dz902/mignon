@@ -4,6 +4,7 @@
 // EXTERNAL DEPENDECY
 
 var Immutable = require('immutable');
+var List = Immutable.List;
 var installDevTools = require("immutable-devtools");
 installDevTools(Immutable);
 var Vex = require('vexflow');
@@ -35,42 +36,146 @@ class ScoreView {
 		});
 	}
 
-	render(state, _red) {
-		Logic.drawStaves();
-
-		var voices = state.get('voices');
-		
-		let processedVoices = [];
-
-		for (let voice of voices) {
-  		var vexVoice = new Vex.Flow.Voice({});
-  		vexVoice.setStrict(false);
-
-			for (let mark of voice) {
-				if (mark === null) {
-					return;
-				}
-
-				let vexTickable = Logic.processMark(mark);
-
-				//
-				if (_red) vexTickable.setStyle({strokeStyle: 'red', fillStyle: 'red'});
-				//
-
-				vexVoice.addTickable(vexTickable);
-			}
-
-			processedVoices.push(vexVoice);
-		}
-
-  	_formatter.joinVoices(processedVoices)
-  		        .formatToStave(processedVoices, _topStave);
-                	
-		processedVoices.forEach(v => v.draw(_ctx, _topStave));
+	render(score, _red) {
+		Renderer.render(score);
 	}
 }
 
-class _Logic extends BasicLogic {
+class VexRenderer {
+	render(score) {
+		let self = this;
+
+		this.drawStaves();
+
+		score = this.processScore(score);
+
+		let vexVoices = score.get('voices').reduce(function(reduction, voice) {
+			let vexVoice = voice.reduce(function(vv, mark) {
+				let vexTickable = self.createTickable(mark);
+
+				vv.addTickable(vexTickable);
+				
+				return vv;
+			}, new Vex.Flow.Voice({}).setStrict(false));
+  		
+  		reduction.push(vexVoice);
+
+  		return reduction;
+		}, []);
+
+  	_formatter.joinVoices(vexVoices)
+  		        .formatToStave(vexVoices, _topStave);
+                	
+		vexVoices.forEach(v => v.draw(_ctx, _topStave));
+	}
+
+	// high-level processing
+
+	processScore(score) {
+		let self = this;
+		let voices = score.get('voices').map(function(voice) {
+			return voice.map(mark => self.processMark(mark));
+		});
+
+		return score.set('voices', voices);
+	}
+	
+	processMark(mark) {
+		switch (mark.get('type')) {
+			case 'NOTE':
+				mark = this.changeNoteToChords(mark);
+				mark = this.addKeys(mark);
+				mark = this.addStepAndAccidental(mark);
+				break;
+			case 'CHORD':
+				mark = this.addKeys(mark);
+				mark = this.addStepAndAccidental(mark);
+				break;
+			case 'BAR':
+			case 'SPACER':
+				break;
+			default:
+				throw new Error('Unknown mark');
+		}
+
+		return mark;
+	}
+
+	// mark processing
+
+	changeNoteToChords(note) {
+		return note.set('notes', List([note]));
+	}
+
+	addKeys(note) {
+		let keys = note.get('notes')
+		               .reduce(function(reduction, n) {
+ 			return reduction.push(n.get('pitch'));
+		}, List());
+
+		return note.set('keys', keys); 
+	}
+
+	addStepAndAccidental(note) {
+		let notes = note.get('notes').map(function(n) {
+			let [ , step, accidental ] = n.get('pitch').match(/^([A-Ga-g])(b|bb|#|##|n)?\/(?:[0-9]|10)$/);
+
+			return n.set('step', step)
+		          .set('accidental', accidental);
+		});
+
+		return note.set('notes', notes);
+	}
+
+	// vex note creation
+	
+	createTickable(mark) {
+		let tickable = null;
+
+		switch (mark.get('type')) {
+			case 'NOTE':
+			case 'CHORD':
+				tickable = this.createNote(mark);
+				break;
+			case 'BAR':
+				tickable = this.createBar(mark);
+				break;
+			case 'SPACER':
+				tickable = this.createSpacer(mark);
+				break;
+			default:
+				throw new Error('Unknown mark');
+		}
+
+		return tickable;
+	}
+
+	createSpacer(mark) {
+		let vexNote = new Flow.GhostNote({
+			keys: ['C/4'],
+			duration: '4',//mark.get('duration'),
+			auto_stem: true
+		});
+
+		return vexNote;
+	}
+
+	createBar(mark) {
+		return new Flow.BarNote(Flow.Barline.SINGLE);
+	}
+
+	createNote(mark) {
+		let vexNote = new Flow.StaveNote({
+			keys: mark.get('keys').toArray(),
+			duration: mark.get('duration'),
+			auto_stem: true
+		});
+		
+		return vexNote;
+	}
+
+	// drawing
+
 	drawStaves() {
 		_topStave = new Vex.Flow.Stave(30, 10, 800);
 		_bottomStave = new Vex.Flow.Stave(30, 150, 800); // x,y,width
@@ -93,84 +198,8 @@ class _Logic extends BasicLogic {
 		
 		return this;
 	}
-	
-	processMark(mark) {
-		switch (mark.get('type')) {
-			case 'NOTE':
-			case 'CHORD':
-				return this.createNote(mark);
-			case 'BAR':
-				return this.createBar(mark);
-			case 'SPACER':
-				return this.createSpacer(mark);
-			default:
-				throw new Error('Unknown mark');
-		}
-	}
-
-	createSpacer(mark) {
-		let vexNote = new Flow.GhostNote({
-			keys: ['C/4'],
-			duration: '4',//mark.get('duration'),
-			auto_stem: true
-		});
-
-		return vexNote;
-	}
-
-	createBar(mark) {
-		return new Flow.BarNote(Flow.Barline.SINGLE);
-	}
-
-	createNote(mark) {
-		// always treat as chord
-
-		if (mark.get('type') == 'NOTE') {
-			mark = mark.set('notes', Immutable.List([mark]));
-		}
-
-		// add accidentals
-
-		let notes = mark.get('notes')
-		                .map((v) => this.checkStepAndAccidental(v));
-
-		// aggregate keys
-
-		let keys = notes.reduce(function(reduction, value) {
-			reduction.push(`${ value.get('pitch') }`);
-			return reduction;
-		}, []);
-
-		// generate vex note
-
-		let vexNote = new Flow.StaveNote({
-			keys: keys,
-			duration: mark.get('duration'),
-			auto_stem: true
-		});
-		
-		// add accidentals
-
-		notes.forEach(function(note, i) {
-			if (notes.get('accidental')) {
-				vexNote.addAccidental(i, new Vex.Flow.Accidental(note.get('accidental')));
-			}
-		}.bind(this));
-		
-		return vexNote;
-	}
-	
-	checkStepAndAccidental(mark) {
-		let [ , step, accidental ] = mark.get('pitch')
-		                                 .match(/^([A-Ga-g])(b|bb|#|##|n)?\/(?:[0-9]|10)$/);
-
-		mark = mark.set('step', step)
-		           .set('accidental', accidental);
-
-		return mark;
-	}
 }
 
-var Logic = new _Logic();
+var Renderer = new VexRenderer();
 
 module.exports = ScoreView;
