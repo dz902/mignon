@@ -83,10 +83,6 @@ class VexRenderer {
 	processMark(mark) {
 		switch (mark.get('type')) {
 			case 'NOTE':
-				mark = this.changeNoteToChords(mark);
-				mark = this.addKeys(mark);
-				mark = this.addStepAndAccidental(mark);
-				break;
 			case 'CHORD':
 				mark = this.addKeys(mark);
 				mark = this.addStepAndAccidental(mark);
@@ -103,9 +99,6 @@ class VexRenderer {
 
 	// mark processing
 
-	changeNoteToChords(note) {
-		return note.set('notes', List([note]));
-	}
 
 	addKeys(note) {
 		let keys = note.get('notes')
@@ -168,6 +161,7 @@ class VexRenderer {
 		let vexNote = new Flow.StaveNote({
 			keys: mark.get('keys').toArray(),
 			duration: mark.get('duration'),
+			octave_shift: 1,
 			auto_stem: true
 		});
 		

@@ -4,6 +4,8 @@
 // EXTERNAL DEPENDECY
 
 var Immutable = require('immutable');
+var List = Immutable.List;
+var OrderedMap = Immutable.OrderedMap;
 var installDevTools = require("immutable-devtools");
 installDevTools(Immutable);
 var Fraction = require('fraction.js');
@@ -77,9 +79,30 @@ class _Logic extends BasicLogic {
 	}
 
 	groupNotesByBeats(score) {
-		score.get('voices').forEach(function(voice, voiceNumber) {
-			let currentBeat = Fraction(0).toString();
+		_notesByBeat = score.get('voices').reduce(function(reduction, voice) {
+			let currentBeat = Fraction(0);
 			
+			let groupedVoice = voice.reduce(function(r, mark) {
+				switch (mark.get('type')) {
+					case 'NOTE':
+					case 'CHORD':
+					case 'SPACER':
+						r = r.updateIn([currentBeat.toString()], List(), m => m.push(mark));
+						currentBeat = currentBeat.add(Fraction(1, parseInt(mark.get('duration'))));
+						
+						break;
+					default:
+				}
+				
+				return r;
+			}, Immutable.Map());
+
+			return reduction.mergeWith((a, b) => a.concat(b), groupedVoice);
+		}, Immutable.Map());
+
+/*		score.get('voices').forEach(function(voice, voiceNumber) {
+			
+			let currentBeat = Fraction(0);
 			voice.forEach(function(note) {
 				note = note.set('voiceNumber', voiceNumber);
 
@@ -103,6 +126,7 @@ class _Logic extends BasicLogic {
 				currentBeat = Fraction(currentBeat).add(exactDuration).toString();
 			});
 		});
+		*/
 
 		this.log(_instance, ' score notes grouped by beat ', _notesByBeat);
 

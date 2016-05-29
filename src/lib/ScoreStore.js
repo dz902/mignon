@@ -4,6 +4,7 @@
 // EXTERNAL DEPENDECY
 
 var Immutable = require('immutable');
+var List = require('immutable').List;
 var installDevTools = require("immutable-devtools");
 installDevTools(Immutable);
 var Fraction = require('fraction.js');
@@ -84,9 +85,9 @@ class ScoreStore extends Store {
 					}
 				],
 				[
-					{ type: 'SPACER' },
-					{ type: 'SPACER' },
-					{ type: 'SPACER' },
+					{ type: 'SPACER', duration: '4' },
+					{ type: 'SPACER', duration: '4' },
+					{ type: 'SPACER', duration: '4' },
 					{ type: 'BAR' },
 					{ type: 'NOTE', pitch: 'F#/5', duration: '4' },
 					{ type: 'NOTE', pitch: 'F#/6', duration: '8' },
@@ -95,7 +96,7 @@ class ScoreStore extends Store {
 			]
 		};
 
-		let chordId = 0, noteId = 0;
+		let voiceId = 0, noteId = 0;
 
 		for (let voice of _score.voices) {
 			for (let note of voice) {
@@ -111,12 +112,29 @@ class ScoreStore extends Store {
 					let [ , step, accidental, octave ] = n.pitch.match(/^([A-Ga-g])(b|bb|#|##|n)?\/([0-9]|10)$/);
 
 					n.id = noteId;
+					n.voiceId = voiceId;
 					n.noteNumber = (STEP_NAMES.indexOf(step)) + parseInt(octave)*12;
 
 					++noteId;
 				}
 			}
+
+			++voiceId;
 		}
+		
+		_score = Immutable.fromJS(_score);
+
+		let voices = _score.get('voices').map(function(voice) {
+			return voice.map(function(note) {
+				if (note.get('type') == 'NOTE') {
+					note = note.set('notes', List([note]));
+				}
+
+				return note;
+			});
+		});
+
+		_score = _score.set('voices', voices);
 	}
 
 
@@ -125,12 +143,16 @@ class ScoreStore extends Store {
 	// GETTERS
 
 	get score() {
-		return Immutable.fromJS(_score);
-	}
-	
-	get notesByBeat() {
-		return Immutable.fromJS(_notesByBeat);
+		return _score;
 	}
 }
+
+class _Logic {
+	changeNoteToChords(note) {
+		return note.set('notes', List([note]));
+	}
+}
+
+var Logic = new _Logic();
 
 module.exports = ScoreStore;
