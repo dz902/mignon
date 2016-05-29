@@ -17,6 +17,7 @@ var Parser = require('./grammar/ScoreParser.js').parser;
 // CONSTANT
 
 const STEP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const ACCIDENTAL_NAMES = ['b', 'bb', '#', '##'];
 
 // PRIVATE
 
@@ -113,7 +114,10 @@ class ScoreStore extends Store {
 
 					n.id = noteId;
 					n.voiceId = voiceId;
-					n.noteNumber = (STEP_NAMES.indexOf(step)) + parseInt(octave)*12;
+
+					let pitchModifierNumber = accidental ? ACCIDENTAL_NAMES.indexOf(accidental)-1 : 0;
+
+					n.noteNumber = (STEP_NAMES.indexOf(step)) + parseInt(octave)*12 + pitchModifierNumber;
 
 					++noteId;
 				}

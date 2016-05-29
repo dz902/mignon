@@ -165,6 +165,12 @@ class VexRenderer {
 			auto_stem: true
 		});
 		
+		mark.get('notes').forEach(function(value, index) {
+			if (value.get('accidental')) {
+	 			vexNote.addAccidental(index, new Flow.Accidental(value.get('accidental')));
+			}
+		});
+		
 		return vexNote;
 	}
 

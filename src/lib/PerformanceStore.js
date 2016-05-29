@@ -25,8 +25,8 @@ const CHORD_TIMING_GAP = 50; // ms
 
 let _instance = null,
     _scoreStore = null,
-    _noteSequenceStore = null,
     _notesByBeat = Immutable.OrderedMap(),
+    _notesByOrder = Immutable.List(),
     _noteSequence = Immutable.List();
 
 // STATE
@@ -39,13 +39,10 @@ class PerformanceStore extends Store {
 	constructor(scoreStore) {
 		super();
 
-		Logic.listenToNoteThen(Logic.trackPerformance);
-
-		_performanceScore = scoreStore.score;
-		
 		_instance = this;
-
+		
 		Logic.groupNotesByBeats(scoreStore.score);
+		Logic.listenToNoteThen(Logic.trackPerformance);
 	}
 }
 
@@ -86,13 +83,17 @@ class _Logic extends BasicLogic {
 				switch (mark.get('type')) {
 					case 'NOTE':
 					case 'CHORD':
-					case 'SPACER':
-						r = r.updateIn([currentBeat.toString()], List(), m => m.push(mark));
-						currentBeat = currentBeat.add(Fraction(1, parseInt(mark.get('duration'))));
+						r = r.updateIn([currentBeat.toString()], List(), m => m.concat(mark.get('notes')));
 						
 						break;
+					case 'SPACER':
+						// still need to advance beat counter 
+						break;
 					default:
+						return r;
 				}
+				
+				currentBeat = currentBeat.add(Fraction(1, parseInt(mark.get('duration'))));
 				
 				return r;
 			}, Immutable.Map());
@@ -100,35 +101,10 @@ class _Logic extends BasicLogic {
 			return reduction.mergeWith((a, b) => a.concat(b), groupedVoice);
 		}, Immutable.Map());
 
-/*		score.get('voices').forEach(function(voice, voiceNumber) {
-			
-			let currentBeat = Fraction(0);
-			voice.forEach(function(note) {
-				note = note.set('voiceNumber', voiceNumber);
-
-				if (!_notesByBeat.get(currentBeat)) _notesByBeat = _notesByBeat.set(currentBeat, Immutable.List());
-			
-				switch (note.get('type')) {
-					case 'NOTE':
-						_notesByBeat = _notesByBeat.updateIn([currentBeat], v => v.push(note));
-						break;
-					case 'CHORD':
-						note.get('notes').forEach(function(n) {
-							_notesByBeat = _notesByBeat.updateIn([currentBeat], v => v.push(n));
-						});
-						break;
-					default:
-						return;
-				}
-			
-				var exactDuration = Fraction(1, note.get('duration'));
-
-				currentBeat = Fraction(currentBeat).add(exactDuration).toString();
-			});
-		});
-		*/
+		_notesByOrder = _notesByBeat.flip().sort((a, b) => Fraction(a).compare(Fraction(b))).flip().toList(); // sort by key
 
 		this.log(_instance, ' score notes grouped by beat ', _notesByBeat);
+		this.log(_instance, ' score notes grouped by order ', _notesByOrder);
 
 		return this;
 	}
@@ -144,7 +120,6 @@ class _Logic extends BasicLogic {
 		}
 
 		let noteOnOnlySequence = noteSequence.filterNot(note => note.get('type') == 'NOTE_OFF');
-		let notesByBeatList = _notesByBeat.toList();
 
 		let _performanceScore = noteOnOnlySequence.zipWith(function(playedNote, scoreNote) {
 			// uniforming played notes as Lists
@@ -227,7 +202,12 @@ class _Logic extends BasicLogic {
 					};
 				}
 
+				if (s) {
+					performanceNote.noteNumber = s.get('noteNumber');
+				}
+
 				if (p) {
+					performanceNote.performance.noteNumber = p.get('noteNumber');
 					performanceNote.performance.timing = p.get('receivedTime');
 				}
 
@@ -235,7 +215,7 @@ class _Logic extends BasicLogic {
 
 				return performanceNote;
 			}, scoreNote);
-		}, notesByBeatList);
+		}, _notesByOrder);
 
 		this.log(_instance, 'performance tracked', _performanceScore);
 	}
