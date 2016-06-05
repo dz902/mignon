@@ -1,11 +1,15 @@
 var HTMLWebpackPlugin = require('html-webpack-plugin');
+var JasmineWebpackPlugin = require('jasmine-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: {
+  	index: './src/index.js', 
+  	test: './test/runner.js'
+  },
   
   output: {
     path: 'dist',
-    filename: 'index.bundle.[hash].js'
+    filename: '[name].bundle.[hash].js'
   },
 
 	module: {
@@ -20,6 +24,15 @@ module.exports = {
 		fs: 'empty'
 	},
 	
-  plugins: [ new HTMLWebpackPlugin ({
-	}) ],
+  plugins: [
+  	new HTMLWebpackPlugin ({
+  		chunks: ['index'],
+  		template: './src/index.html',
+  		filename: 'index.html'
+		}),
+		new JasmineWebpackPlugin ({
+			chunks: ['test'],
+			filename: 'test.html'
+		})
+	],
 };
