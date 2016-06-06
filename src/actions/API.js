@@ -11,7 +11,9 @@ const createAction = require('redux-actions').createAction;
 const API = {
 	START_APP: createAction('START_APP'),
 	GRANT_MIDI_ACCESS: createAction('GRANT_MIDI_ACCESS'),
-	POLL_MIDI_INPUT: createAction('POLL_MIDI_INPUT')
+	POLL_MIDI_INPUT: createAction('POLL_MIDI_INPUT'),
+	UPDATE_MIDI_INPUT: createAction('UPDATE_MIDI_INPUT'),
+	LIST_MIDI_INPUTS: createAction('LIST_MIDI_INPUTS')
 };
 
 module.exports = API;

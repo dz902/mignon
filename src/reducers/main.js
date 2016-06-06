@@ -3,7 +3,6 @@
 
 // EXTERNAL DEPENDECY
 
-const dispatch      = require('redux').dispatch;
 const handleActions = require('redux-actions').handleActions;
 const { Effects, loop } = require('redux-loop');
 
@@ -11,24 +10,19 @@ const { Effects, loop } = require('redux-loop');
 // INTERNAL DEPENDENCY
 
 const API = require('../actions/API.js');
+const Store = require('../store/Store.js');
 
 
 // CODE
 
-const initialState = {
-	MIDI: {
-		isRequesting: false,
-		access: null,
-		selectedInput: null
-	}
-};
 
 const reducerMap = {
 	START_APP: startApp,
-	GRANT_MIDI_ACCESS: grantMIDIAccess
+	GRANT_MIDI_ACCESS: grantMIDIAccess,
+	LIST_MIDI_INPUTS: listMIDIInputs
 };
 
-const reducer = handleActions(reducerMap, initialState);
+const reducer = handleActions(reducerMap);
 
 
 // SUB-REDUCERS
@@ -44,7 +38,10 @@ function grantMIDIAccess(state, action) {
 	let stateChanges = {};
 
 	if (action.error) {
-
+		return loop(
+			state,
+			Effects.none()
+		);
 	} else {
 		let access = action.payload;
 
@@ -57,15 +54,25 @@ function grantMIDIAccess(state, action) {
 
 		return loop(
 			createState(state, stateChanges),
-			Effects.constant(pollMIDIInput, access)
+			Effects.call(watchMIDIState, access)
 		);
 	}
 	
 	return state;
 }
 
-function pollMIDIInput(state, action) {
+function listMIDIInputs(state, action) {
+	let access = action.payload;
+	let stateChanges = {
+		MIDI: {
+			inputs: access.inputs
+		}
+	};
 
+	return loop(
+		createState(state, stateChanges),
+		Effects.none()
+	);
 }
 
 // SIDE-EFFECTS
@@ -80,16 +87,21 @@ function watchMIDIState(access) {
 	access.onstatechange = function(connEvt) {
 		let input = connEvt.port;
 
-		dispatch(API.POLL_MIDI_INPUT(input));
+		Store.dispatch(API.UPDATE_MIDI_INPUT(input));
 	};
+
+	return API.LIST_MIDI_INPUTS(access);
 }
 
 // HELPERS
 
 function createState(state, stateChanges) {
-	let newState = Object.assign({}, state, stateChanges);
+	let newState = Object.assign({}, 
+	                             state, 
+	                             stateChanges, 
+	                             { stateChanges: stateChanges }); // track changes for Vue
 
-	return Object.freeze(newState);
+	return newState;
 }
 
 

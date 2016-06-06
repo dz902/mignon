@@ -15,6 +15,7 @@ module.exports = {
 	module: {
 		loaders: [
 			{ test: /\.coffee$/, loader: "coffee-loader" },
+			{ test: /\.jade$/, loader: "jade-loader" },
 			{ test: /\.(coffee\.md|litcoffee)$/, loader: "coffee-loader?literate" },
 			{ test: /\.vue$/, loader: 'vue' }
 		]
