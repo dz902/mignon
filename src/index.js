@@ -4,9 +4,17 @@
 // INTERNAL DEPENDECY
 
 var Store = require('./store/Store.js');
-var Router = require('./view/View.js').Router;
+var View = require('./view/View.js');
 
 
 // CODE
 
 Store.dispatch({type: 'START_APP'});
+
+Store.subscribe(function() {
+	let stateChanges = Store.getState().stateChanges;
+
+	View.applyChanges(stateChanges);
+});
+
+View.render(Store);

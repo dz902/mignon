@@ -24,10 +24,6 @@ const createView = function() {
 		});
 	}
 
-	function setDispatcher(dispatcherFunc) {
-		dispatcher = dispatcherFunc;
-	}
-
 	function connectState(key, callback) {
 		if (!listeners[key]) {
 			listeners[key] = [];
@@ -46,7 +42,6 @@ const createView = function() {
 	
 	return {
 		applyChanges: applyChanges,
-		setDispatcher: setDispatcher,
 		connectState: connectState,
 		render: render
 	};
@@ -54,22 +49,9 @@ const createView = function() {
 
 const View = createView();
 
-View.setDispatcher(Store.dispatch);
-
 View.connectState('MIDI', function(changes, disptacher) {
 	console.log(changes);
 	
-	if (changes['access']) {
-		$('#app b').html(String(changes['access']));
-	}
 });
-
-Store.subscribe(function() {
-	let stateChanges = Store.getState().stateChanges;
-
-	View.applyChanges(stateChanges);
-});
-
-View.render('#app', Store.getState());
 
 module.exports = { View: View };
