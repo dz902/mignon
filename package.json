@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/dz902/mignon#readme",
   "dependencies": {
+    "assign-deep": "^0.4.5",
     "deep-diff": "^0.3.4",
     "fraction.js": "^3.3.1",
     "immutable": "^3.8.1",

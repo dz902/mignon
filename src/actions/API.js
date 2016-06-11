@@ -13,7 +13,15 @@ const API = {
 	GRANT_MIDI_ACCESS: createAction('GRANT_MIDI_ACCESS'),
 	POLL_MIDI_INPUT: createAction('POLL_MIDI_INPUT'),
 	UPDATE_MIDI_INPUT: createAction('UPDATE_MIDI_INPUT'),
-	LIST_MIDI_INPUTS: createAction('LIST_MIDI_INPUTS')
+	LIST_MIDI_INPUTS: createAction('LIST_MIDI_INPUTS'),
+	RECEIVE_MIDI_NOTE: null,
+	LOG: null
 };
+
+Object.keys(API).forEach(function(k) {
+	if (API[k] === null) {
+		API[k] = createAction(k);
+	}
+});
 
 module.exports = API;

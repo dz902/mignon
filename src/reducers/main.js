@@ -3,6 +3,7 @@
 
 // EXTERNAL DEPENDECY
 
+const merge = require('assign-deep');
 const handleActions = require('redux-actions').handleActions;
 const { Effects, loop } = require('redux-loop');
 
@@ -10,16 +11,15 @@ const { Effects, loop } = require('redux-loop');
 // INTERNAL DEPENDENCY
 
 const API = require('../actions/API.js');
-const Store = require('../store/Store.js');
 
 
 // CODE
 
-
 const reducerMap = {
 	START_APP: startApp,
 	GRANT_MIDI_ACCESS: grantMIDIAccess,
-	LIST_MIDI_INPUTS: listMIDIInputs
+	LIST_MIDI_INPUTS: updateMIDIInputs,
+	UPDATE_MIDI_INPUT: updateMIDIInputs
 };
 
 const reducer = handleActions(reducerMap);
@@ -38,41 +38,31 @@ function grantMIDIAccess(state, action) {
 	let stateChanges = {};
 
 	if (action.error) {
-		return loop(
-			state,
-			Effects.none()
-		);
+			return state;
 	} else {
 		let access = action.payload;
 
 		stateChanges = {
 			MIDI: {
 				isRequesting: false,
-				access: access
+				access: access,
+				inputs: access.inputs
 			}
 		};
 
-		return loop(
-			createState(state, stateChanges),
-			Effects.call(watchMIDIState, access)
-		);
+		return createState(state, stateChanges);
 	}
-	
-	return state;
 }
 
-function listMIDIInputs(state, action) {
-	let access = action.payload;
+function updateMIDIInputs(state, action) {
+	let access = state.MIDI.access;
 	let stateChanges = {
 		MIDI: {
 			inputs: access.inputs
 		}
 	};
 
-	return loop(
-		createState(state, stateChanges),
-		Effects.none()
-	);
+	return createState(state, stateChanges);
 }
 
 // SIDE-EFFECTS
@@ -83,26 +73,72 @@ function requestMIDIAccess() {
 		              .catch( error => API.GRANT_MIDI_ACCESS(error) );
 }
 
-function watchMIDIState(access) {
-	access.onstatechange = function(connEvt) {
-		let input = connEvt.port;
-
-		Store.dispatch(API.UPDATE_MIDI_INPUT(input));
-	};
-
-	return API.LIST_MIDI_INPUTS(access);
-}
-
 // HELPERS
 
 function createState(state, stateChanges) {
-	let newState = Object.assign({}, 
-	                             state, 
-	                             stateChanges, 
-	                             { stateChanges: stateChanges }); // track changes for Vue
+	let newState = assign(state, 
+	                      stateChanges, 
+	                      { stateChanges: null }, // delete previous state changes or will be merged
+	                      { stateChanges: stateChanges });
 
 	return newState;
 }
 
+// check prototype, only merge regular Object
+/* 
+  addition, modify, deletion
+
+  inputs = ['A', 'B', 'C'];
+
+  inputs = ['A', 'B', 'C', 'D']; [undefined, undefined, undefined, 'D']
+
+	inputs = ['A', 'B', 'D']; [undefined, undefined, 'D', null]
+
+  inputs = ['A', 'B']; [undefined, undefined, null]
+*/
+function assign(target /*, ...resources*/) {
+	let args = Array.from(arguments);
+	let initalValue, keysFunc;
+
+	if (target.constructor === Object) {
+		initalValue = {};
+		keysFunc = Object.keys;
+	} else if (target.constructor === Array) {
+		initalValue = [];
+		keysFunc = (a) => Array.from(a.keys());
+	} else {
+		// non-organic data, direct assign
+		return args[args.length-1];
+	}
+
+	let result = args.reduce(function(reduction, resource) {
+		if (resource.constructor !== target.constructor) {
+			throw new Error(`Target and resource type do not match.`);
+		}
+
+		keysFunc(resource).forEach(function(k) {
+			let v = resource[k];
+			
+			if (v === undefined) {
+				// do nothing
+			} else if (v === null) {
+				// deletion
+				delete reduction[k];
+			} else if (reduction[k]) {
+				// modification
+				reduction[k] = assign(reduction[k], v);
+			} else {
+				// insertion
+				reduction[k] = v;
+			}
+		});
+		
+		return reduction;
+	}, initalValue);
+
+	Object.freeze(result);
+
+	return result;
+}
 
 module.exports = reducer;
