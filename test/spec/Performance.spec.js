@@ -1,45 +1,102 @@
 /* jslint browser: true, node: true, sub: true, esversion: 6 */
 /* globals describe, it, expect */
 'use strict';
-/*
-var Performance = require('../../src/modules/Performance.js');
-var adjustMsgTimingToSamplingInterval = Performance.adjustMsgTimingToSamplingInterval;
 
-describe('Performance functions', function() {
-// ----
+var { Effects, loop } = require('redux-loop');
 
+var API = require('../../src/actions/API.js');
+var { reducer, reducerMap } = require('../../src/reducers/main.js');
 
-// adjustMsgTimingToSamplingInterval(noteMsgSeq: Array, samplingInterval: NonZeroInteger) -> Array
+describe('TRACK_MIDI_NOTE', () => {
+	describe('when chord hit matches chord of current beat', () => {
+		var state;
+		var notePressed, notePerformed, notesOfCurrentBeat;
+		var expectedBeat;
+		var result, expectedResult;
 
-describe('adjustMsgTimingToSamplingInterval()', function() {
-	let noteMsgSeqStub = [
-		{ timing: 10000 }, { timing: 10010 }, { timing: 10020 }, { timing: 10030 }, { timing: 10040 }, { timing: 10045 }, { timing: 10050 }, 
-		{ timing: 10100 },
-		{ timing: 10155 }, { timing: 10165 }, { timing: 10175 }, { timing: 10185 }, { timing: 10195 }, { timing: 10205 }, 
-		{ timing: 10300 }, { timing: 20400 }
-	];
+		notePressed = createMIDINote('NOTE_ON', 48, 60, 483470.9201490041);
 
-	it('should set sampleTiming for each item in `noteMsgSeq` with respect of `samplingInterval`', function() {
-		let v = adjustMsgTimingToSamplingInterval(noteMsgSeqStub, 50);
+		notePerformed = [];
+		notePerformed[55] = {
+			noteId: 2,
+			pressed: true
+		};
+		
+		notesOfCurrentBeat = [];
+		notesOfCurrentBeat[48] = createNote(0, 'C', 4, 48, 4);
+		notesOfCurrentBeat[52] = createNote(1, 'E', 4, 52, 4);
+		notesOfCurrentBeat[55] = createNote(2, 'G', 4, 55, 4);
 
-		expect(v[1].timing).toBe(10000);
-		expect(v[2].timing).toBe(10000);
-		expect(v[3].timing).toBe(10000);
-		expect(v[4].timing).toBe(10000);
-		expect(v[5].timing).toBe(10000);
-		expect(v[6].timing).toBe(10050);
-		expect(v[7].timing).toBe(10100);
-		expect(v[8].timing).toBe(10150);
-		expect(v[9].timing).toBe(10150);
-		expect(v[10].timing).toBe(10150);
-		expect(v[11].timing).toBe(10150);
-		expect(v[12].timing).toBe(10150);
-		expect(v[13].timing).toBe(10200);
-		expect(v[14].timing).toBe(10300);
-		expect(v[15].timing).toBe(20400);
+		state = {
+			config: {
+				samplingRate: 100
+			},
+			score: {
+				measures: [
+					{
+						measureNumber: 1,
+						notes: [
+							[createNote(0, 'C', 4, 48, 4), createNote(1, 'E', 4, 52), createNote(2, 'G', 4, 55)]
+						]
+					}
+				],
+				beats: [
+					notesOfCurrentBeat
+				]
+			},
+			performance: {
+				noteSeq: [
+					[createMIDINote('NOTE_ON', 55, 60, 483468.0603250017)]
+				],
+				currentBeat: 0,
+				beats: [notePerformed]
+			}
+		};
+
+		expectedBeat = [];
+		expectedBeat[48] = {
+			noteId: 0,
+			pressed: true
+		};
+		expectedBeat[55] = {
+			noteId: 2,
+			pressed: true
+		};
+		expectedResult = {
+			performance: {
+				noteSeq: [
+					[createMIDINote('NOTE_ON', 55, 60, 483468.0603250017), notePressed]
+				],
+				currentBeat: 0,
+				beats: [
+					expectedBeat
+				]
+			}			
+		};
+
+		it('should record note presence', () => {
+			result = reducer(state, API.TRACK_MIDI_NOTE(notePressed));
+
+			expect(result.performance).toEqual(expectedResult.performance);
+		});
 	});
 });
 
+function createNote(i, n, o, nn, d) {
+	return {
+		noteId: i,
+		name: n,
+		octave: o,
+		noteNumber: nn,
+		duration: d
+	};
+}
 
-// ----
-});*/
+function createMIDINote(t, nn, vl, time) {
+	 return {
+	 	 type: t,
+		 noteNumber: nn,
+		 velocity: vl,
+		 receivedTime: time
+	 };
+}

@@ -10,17 +10,33 @@ var reduxLogger  = require('redux-logger')();
 
 // INTERNAL DEPENDENCY
 
-var reducer = require('../reducers/main.js');
+var { reducer } = require('../reducers/main.js');
 
 // CODE
 
 	let initialState = {
-		test: 1,
 		stateChanges: {},
+		config: {
+			samplingRate: 100, // The Science and Psychology of Music Performance: Creative Strategy for Teaching and Learning pp.295
+		},
 		MIDI: {
-			isRequesting: false,
-			access: null,
-			selectedInput: null
+			access: undefined,
+			selectedInput: undefined,
+			noteSeq: [],
+			noteBuffer: []
+		},
+		score: {
+			measures: [
+				{
+					measureNumber: 1,
+					notes: []
+				}
+			],
+			beats: []
+		},
+		performance: {
+			currentBeat: 0,
+			beats: []
 		}
 	};
 

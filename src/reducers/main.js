@@ -3,7 +3,6 @@
 
 // EXTERNAL DEPENDECY
 
-const merge = require('assign-deep');
 const handleActions = require('redux-actions').handleActions;
 const { Effects, loop } = require('redux-loop');
 
@@ -19,7 +18,8 @@ const reducerMap = {
 	START_APP: startApp,
 	GRANT_MIDI_ACCESS: grantMIDIAccess,
 	LIST_MIDI_INPUTS: updateMIDIInputs,
-	UPDATE_MIDI_INPUT: updateMIDIInputs
+	UPDATE_MIDI_INPUT: updateMIDIInputs,
+	TRACK_MIDI_NOTE: trackMIDINote
 };
 
 const reducer = handleActions(reducerMap);
@@ -28,10 +28,7 @@ const reducer = handleActions(reducerMap);
 // SUB-REDUCERS
 
 function startApp(state, action) {
-	return loop(
-		state,
-		Effects.promise(requestMIDIAccess)
-	);
+	return state;
 }
 
 function grantMIDIAccess(state, action) {
@@ -65,12 +62,103 @@ function updateMIDIInputs(state, action) {
 	return createState(state, stateChanges);
 }
 
-// SIDE-EFFECTS
+function trackTimedNote(state, action) {
+	let note = action.payload;
+	let noteSeq    = state.MIDI.noteSeq,
+	    noteBuffer = state.MIDI.noteBuffer,
+	    samplingRate = state.config.samplingRate;
 
-function requestMIDIAccess() {
-	return navigator.requestMIDIAccess()
-		              .then( access => API.GRANT_MIDI_ACCESS(access) )
-		              .catch( error => API.GRANT_MIDI_ACCESS(error) );
+	if (note.type === 'NOTE_OFF') {
+		return state;
+	}
+
+	// set note buffer
+
+	let noteBufferChanges = [];
+	noteBufferChanges[note.noteNumber] = note;
+
+	// normalize note timing to detect chords
+
+	let normalizedNoteTiming = Math.floor(note.receivedTime / samplingRate) * samplingRate;
+	normalizedNoteTiming = Number.parseInt(normalizedNoteTiming);
+	
+	// detect chords and add to note sequences
+	
+	let noteSeqChanges  = [];
+	noteSeqChanges[normalizedNoteTiming] = [];
+	
+	let notesAtSameTiming = noteSeq[normalizedNoteTiming];
+	
+	if (notesAtSameTiming) {
+		noteSeqChanges[normalizedNoteTiming][note.noteNumber] = note;
+	} else {
+		let noteGroup = [];
+		noteGroup[note.noteNumber] = note;
+		noteSeqChanges[normalizedNoteTiming] = noteGroup;
+	}
+
+	let stateChanges = {
+		MIDI: {
+			noteSeq: noteSeqChanges,
+			noteBuffer: noteBufferChanges
+		}
+	};
+
+	return createState(state, stateChanges);
+}
+
+function trackMIDINote(state, action) {
+	var note = action.payload;
+	var noteSeq        = state.performance.noteSeq;
+	var lastNoteGroup  = last(noteSeq);
+	var lastNote       = last(lastNoteGroup);
+	var currentBeat    = state.performance.currentBeat;
+	var scoreNotesByBeat = state.score.beats;
+	var scoreNotesOnBeat = null;
+	var noteSeqChanges = [];
+	var stateChanges   = {
+		performance: {
+			noteSeq: noteSeqChanges,
+			beats: []
+		}
+	};
+
+	if (!lastNote) {
+		noteSeqChanges = [note];
+	} else {
+		if (note.receivedTime - lastNote.receivedTime < state.config.samplingRate) {
+			noteSeqChanges[noteSeq.length-1] = getAppendChange(lastNoteGroup, note);
+		} else {
+			noteSeqChanges[noteSeq.length] = [note];
+			currentBeat += 1;
+			stateChanges.performance.currentBeat = currentBeat;
+		}
+	}
+
+	scoreNotesOnBeat = scoreNotesByBeat[currentBeat];
+
+	if (scoreNotesOnBeat) {
+		let scoreNotePlayed = scoreNotesOnBeat[note.noteNumber];
+		let notePerformance = null;
+		
+		if (scoreNotePlayed) {
+			notePerformance = {
+				noteId: scoreNotePlayed.noteId,
+				pressed: true
+			};
+		} else {
+			notePerformance = {
+				extra: true,
+				note: note
+			};
+		}
+	
+		stateChanges.performance.beats[currentBeat] = getBracketChange(note.noteNumber, notePerformance);
+	} else {
+		// score play finished
+	}
+
+	return createState(state, stateChanges);
 }
 
 // HELPERS
@@ -100,7 +188,9 @@ function assign(target /*, ...resources*/) {
 	let args = Array.from(arguments);
 	let initalValue, keysFunc;
 
-	if (target.constructor === Object) {
+	if (target === null || target === undefined) {
+		throw new Error(`[assign] Target cannot be null or undefined (now: ${String(target)})`);
+	} else if (target.constructor === Object) {
 		initalValue = {};
 		keysFunc = Object.keys;
 	} else if (target.constructor === Array) {
@@ -112,8 +202,9 @@ function assign(target /*, ...resources*/) {
 	}
 
 	let result = args.reduce(function(reduction, resource) {
-		if (resource.constructor !== target.constructor) {
-			throw new Error(`Target and resource type do not match.`);
+		if (resource === null || resource === undefined || 
+		    resource.constructor !== target.constructor) {
+			throw new Error(`[assign] Target and resource type do not match.`);
 		}
 
 		keysFunc(resource).forEach(function(k) {
@@ -141,4 +232,35 @@ function assign(target /*, ...resources*/) {
 	return result;
 }
 
-module.exports = reducer;
+function last(arr) {
+	return Array.isArray(arr) && arr.length > 0 ? 
+		     arr[arr.length-1] : undefined;
+}
+
+function getAppendChange(arr, val) {
+	let change = [];
+
+	if (Array.isArray(arr) && arr.length > 0) {
+		change[arr.length] = val;
+	} else {
+		change.push(val);
+	}
+
+	return change;
+}
+
+function getBracketChange(idx, val) {
+	if (idx < 0) {
+		throw new Error('[getReassignmentChange] Index is less than zero.');
+	}
+
+	let change = [];
+	change[idx] = val;
+
+	return change;
+}
+
+module.exports = {
+	reducerMap: reducerMap,
+	reducer: reducer
+};

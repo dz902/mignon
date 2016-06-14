@@ -15,39 +15,43 @@ var API = require('../actions/API.js');
 
 // CODE
 
-let appElem = null;
+var initializer, patcher, updateMIDI;
+var handleMIDIStateChange, handleMIDIMessage;
+var convertMIDIMessageToNote;
 
-const View = createView(require('./components/app.jade')(), initializer, patcher);
+// INIT & PATCHER
 
-function initializer(mountingPoint) {
-	appElem = mountingPoint;
-}
+initializer = function initializer(rootElem) {
+	navigator.requestMIDIAccess()
+		       .then( access => Store.dispatch(API.GRANT_MIDI_ACCESS(access)) )
+		       .catch( error => Store.dispatch(API.GRANT_MIDI_ACCESS(error)) );
+};
 
-function patcher(state) {
-	if (state.MIDI) updateMIDI(state.MIDI);
-}
+patcher = function patcher(rootElem, state) {
+	if (state.MIDI) updateMIDI(rootElem, state.MIDI);
+};
 
 // SUB-PATCHERS
 
-function updateMIDI(stateMIDI) {
+updateMIDI = function updateMIDI(rootElem, stateMIDI) {
 	if (stateMIDI.access) {
 		stateMIDI.access.onstatechange = handleMIDIStateChange;
 	}
 
 	if (stateMIDI.inputs) {
 		if (stateMIDI.inputs.size > 0) {
-			appElem.querySelector('b').textContent = 'LISTENING';
+			rootElem.querySelector('b').textContent = `LISTENING TO (${Array.from(stateMIDI.inputs)[0][1]['name']})`;
 
 			stateMIDI.inputs.forEach(inp => inp.onmidimessage = handleMIDIMessage);
 		} else {
-			appElem.querySelector('b').textContent = 'NO MIDI FOUND';
+			rootElem.querySelector('b').textContent = 'NO MIDI FOUND';
 		}
 	}
-}
+};
 
 // EVENT HANDLERS
 
-function handleMIDIStateChange(connEvt) {
+handleMIDIStateChange = function handleMIDIStateChange(connEvt) {
 	let device = connEvt.port;
 
 	if (device.type !== 'input') {
@@ -55,29 +59,30 @@ function handleMIDIStateChange(connEvt) {
 	} else {
 		Store.dispatch(API.UPDATE_MIDI_INPUT(device));
 	}
-}
+};
 
-function handleMIDIMessage(msgEvt) {
+handleMIDIMessage = function handleMIDIMessage(msgEvt) {
 	let note = convertMIDIMessageToNote(msgEvt);
 
 	if (note.type == 'UNKNOWN') {
 		return;
 	}
 	
-	Store.dispatch(API.RECEIVE_MIDI_NOTE(note));
-}
+	Store.dispatch(API.TRACK_MIDI_NOTE(note));
+};
 
 // HELPERS
 
-function convertMIDIMessageToNote(msgEvt) {
+convertMIDIMessageToNote = function convertMIDIMessageToNote(msgEvt) {
 	let msgData = msgEvt.data;
 	let typeId        = msgData[0] >> 4,
 	    channelNumber = msgData[0] & 0b00001111,
 	    noteNumber    = msgData[1],
 	    velocity      = msgData[2];
 	let noteMsg = {
-		rawData: msgData,
-		type: 'UNKNOWN'
+		type: 'UNKNOWN',
+		receivedTime: msgEvt.receivedTime,
+		rawData: msgData
 	};
 
 	if (typeId === 0b1000) {
@@ -93,6 +98,8 @@ function convertMIDIMessageToNote(msgEvt) {
 	}
 
 	return noteMsg;
-}
+};
+
+const View = createView(require('./components/app.jade')(), initializer, patcher);
 
 module.exports = View;

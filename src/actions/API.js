@@ -15,6 +15,7 @@ const API = {
 	UPDATE_MIDI_INPUT: createAction('UPDATE_MIDI_INPUT'),
 	LIST_MIDI_INPUTS: createAction('LIST_MIDI_INPUTS'),
 	RECEIVE_MIDI_NOTE: null,
+	TRACK_MIDI_NOTE: null,
 	LOG: null
 };
 
