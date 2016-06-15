@@ -17,7 +17,7 @@ var { reducer, reducerMap } = require('../../src/reducers/main.js');
 	LOG: null
 */
 describe('START_APP', () => {
-	it('should alter no state', () => {
+	it('should not alter state', () => {
 		let result = reducer({whatever: 'whatever'}, API.START_APP());
 		let expected = {whatever: 'whatever'};
 		
@@ -25,28 +25,3 @@ describe('START_APP', () => {
 	});
 });
 
-describe('GRANT_MIDI_ACCESS', () => {
-	describe('on success', () => {
-		it('should set MIDI.access and MIDI.inputs on success');
-	});
-
-	describe('on error', () => {
-		it('should set MIDI.error on error');
-	});
-});
-
-describe('UPDATE_MIDI_INPUT', () => {
-	it('should update MIDI.inputs');
-});
-
-describe('RECEIVE_MIDI_NOTE', () => {
-	it('should add note to buffer');
-
-	describe('when note timing < last sampling time + sampling rate', () => {
-		it('should see note as simutaneous with last note');
-	});
-
-	describe('when note timing > last sampling time + sampling rate', () => {
-		it('should see note as a new note');
-	});
-});

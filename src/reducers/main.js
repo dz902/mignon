@@ -126,7 +126,7 @@ function trackMIDINote(state, action) {
 	if (!lastNote) {
 		noteSeqChanges = [note];
 	} else {
-		if (note.receivedTime - lastNote.receivedTime < state.config.samplingRate) {
+		if (note.receivedTime - lastNote.receivedTime <= state.config.samplingRate) {
 			noteSeqChanges[noteSeq.length-1] = getAppendChange(lastNoteGroup, note);
 		} else {
 			noteSeqChanges[noteSeq.length] = [note];
@@ -155,7 +155,7 @@ function trackMIDINote(state, action) {
 	
 		stateChanges.performance.beats[currentBeat] = getBracketChange(note.noteNumber, notePerformance);
 	} else {
-		// score play finished
+		stateChanges = {};
 	}
 
 	return createState(state, stateChanges);

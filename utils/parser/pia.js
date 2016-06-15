@@ -3,6 +3,6 @@
 
 var peg = require('pegjs');
 
-let parser = peg.buildParser(require('raw!./pia.peg'), {trace: true});
+let parser = peg.buildParser(require('raw!./pia.pegjs'), {trace: true});
 
 module.exports = parser;
