@@ -2,33 +2,64 @@
 	const STEP_NUMBER = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 	var currentOctave = 5;
 	var currentDuration = 4;
-	var noteIdCounter = 0;
+	var accidentalRecord = []; // stepNumber: { octave: 4 }
+	var noteIdCounter = 0, lastNoteNumber = 0;
 	
-	function createNote(name, octave, duration) {
+	function createNote(name, octave, duration, isConsecutive) {
 		let note = {
 			noteId: noteIdCounter,
 			name: name,
-			duration: duration
+			duration: duration !== null ? duration : currentDuration
 		};
 
 		if (name !== 'O') {
-			note.octave = octave ? octave : 5;
-			note.noteNumber = STEP_NUMBER.findIndex(v => v === name);
+			octave = octave !== null ? octave : currentOctave;
 
+			let stepName = name[0];
 			let accidental = name[1];
+			let noteNumber = STEP_NUMBER.findIndex(v => v === stepName);
 
-			if (accidental === 'b') {
-				note.noteNumber -= 1;
-			} else if (accidental === '#') {
-				note.noteNumber +=1;
+			if (isConsecutive) {
+				if (lastNoteNumber > noteNumber) {
+					octave += 1;
+				}
+					
+				lastNoteNumber = noteNumber;
+			} else {
+				resetLastNote();
+			}
+
+			switch (accidental) {
+				case 'b':
+					accidentalRecord[`${stepName},${octave}`] = -1;
+					noteNumber -= 1;
+					console.log(note);
+					break;
+				case '#':
+					accidentalRecord[`${stepName},${octave}`] = 1;
+					noteNumber +=1;
+					break;
+				case 'n':
+					accidentalRecord[`${stepName},${octave}`] = 0;
+					break;
+				case undefined:
+					noteNumber += accidentalRecord[`${stepName},${octave}`] || 0;
+					break;
+				default:
+					expected('accidental to be b / # / n');
 			}
 		
-			note.noteNumber += note.octave * 12 - 1;
+			note.octave = octave;
+			note.noteNumber = noteNumber + octave * 12;
 		}
 	
 		noteIdCounter += 1;
 	
 		return note;
+	}
+	
+	function resetLastNote() {
+		lastNoteNumber = 0;
 	}
 }
 
@@ -44,11 +75,12 @@ Measure "measure" =
 	}
 
 Octave "octave" =
-	_ octave:("^"+ / "_"+ / "-") _ {
-		if (octave === '-') {
+	_ octave:("^"+ / "_"+ / "=") _ {
+
+		if (octave === '=') {
 			octave = 5;
 		} else if (octave.length <= 5) {
-			octave = octave.length * (octave[0] === '^' ? -1 : 1) + 5
+			octave = octave.length * (octave[0] === '^' ? 1 : -1) + 5
 		} else {
 			expected(`octave indicator, got "${octave}"`);
 		}
@@ -62,7 +94,7 @@ Note "note" =
 	_ octave:Octave? notes:(NoteGroup / NoteName) duration:Duration? _ {
 			if (Array.isArray(notes)) {
 				notes = notes.reduce((r, name) => {
-					let note = createNote(name, octave, duration);
+					let note = createNote(name, octave, duration, true);
 
 					r.push(note);
 
@@ -71,6 +103,8 @@ Note "note" =
 			} else {
 				notes = [createNote(notes, octave, duration)];
 			}
+
+			resetLastNote();
 
 			return notes;
 		}

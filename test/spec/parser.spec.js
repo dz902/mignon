@@ -1,13 +1,37 @@
 /* jslint browser: true, node: true, sub: true, esversion: 6 */
-/* globals describe, it, expect */
+/* globals jasmine, beforeEach, describe, it, expect */
 'use strict';
 
-var parser = require('../../utils/parser/pia.js');
+var jsondiffpatch = require('jsondiffpatch');
+var formatters = require('jsondiffpatch/src/formatters/console');
 var trace = require('pegjs-backtrace');
 
+var parser = require('../../utils/parser/pia.js');
+
 describe('PIA PEG', () => {
+	beforeEach(() => {
+    jasmine.addMatchers({
+      toEqualJSON: function(util, customEqualityTesters) {
+        return {
+          compare: function(actual, expected) {
+              var result = {};
+              actual = JSON.parse(JSON.stringify(actual));
+              expected = JSON.parse(JSON.stringify(expected));
+              result.pass = util.equals(actual, expected, customEqualityTesters);
+              result.name = 'JSON objects ' + (result.pass ? '' :  'don\'t') + ' match';
+              if (result.pass) {
+                  result.message = 'OMG Big Equal!';
+              } else {
+                  result.message = '' + formatters.format(jsondiffpatch.diff(expected, actual));
+              }
+              return result;
+          },
+      	};
+      }
+    });
+	});
+	
 	it('should parse pia scores', () => {
-		let text = require('raw!../../utils/scores/test.pia');
 		let result = null;
 		let expectedResult = [
 			{
@@ -76,12 +100,14 @@ describe('PIA PEG', () => {
 						noteId: 8,
 						noteNumber: 64,
 						name: 'E',
+						octave: 5,
 						duration: 4
 					},
 					{
 						noteId: 9,
 						noteNumber: 69,
 						name: 'A',
+						octave: 5,
 						duration: 4
 					},
 					{
@@ -123,12 +149,10 @@ describe('PIA PEG', () => {
 
 		expect(() => {
 			result = parser.parse(`1| ^ c/4 o/8 eb/4 a/8 |
-			                       1| a/4 e-a-c/4 e-a-c/4 |
+			                       1| = a/4 e-a-c/4 e-a-c/4 |
 			                       2| _ a c-e`);
 		}).not.toThrow();
 		
-		let testResult = expect(result).toEqual(expectedResult);
-
-		console.log(testResult.extra, testResult.missing);
+		expect(result).toEqualJSON(expectedResult);
 	});
 });

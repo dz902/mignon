@@ -57,6 +57,7 @@
     "jasmine-core": "^2.4.1",
     "jasmine-webpack-plugin": "^0.1.1",
     "jison": "^0.4.17",
+    "jsondiffpatch": "^0.1.43",
     "key-mirror-nested": "^1.2.4",
     "pegjs-backtrace": "^0.1.1",
     "raw-loader": "^0.5.1",
