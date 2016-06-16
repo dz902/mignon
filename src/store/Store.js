@@ -26,11 +26,10 @@ var { reducer } = require('../reducers/main.js');
 			noteBuffer: []
 		},
 		score: {
-			measures: [
-				{
-					measureNumber: 1,
-					notes: []
-				}
+			measures: [ // measure
+				[ // parts
+					[] // part: notes
+				]
 			],
 			beats: []
 		},

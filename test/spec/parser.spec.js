@@ -6,37 +6,39 @@ var jsondiffpatch = require('jsondiffpatch');
 var formatters = require('jsondiffpatch/src/formatters/console');
 var trace = require('pegjs-backtrace');
 
-var parser = require('../../utils/parser/pia.js');
+var parser = require('../../src/lib/parser/pia.js');
 
 describe('PIA PEG', () => {
 	beforeEach(() => {
-    jasmine.addMatchers({
-      toEqualJSON: function(util, customEqualityTesters) {
-        return {
-          compare: function(actual, expected) {
-              var result = {};
-              actual = JSON.parse(JSON.stringify(actual));
-              expected = JSON.parse(JSON.stringify(expected));
-              result.pass = util.equals(actual, expected, customEqualityTesters);
-              result.name = 'JSON objects ' + (result.pass ? '' :  'don\'t') + ' match';
-              if (result.pass) {
-                  result.message = 'OMG Big Equal!';
-              } else {
-                  result.message = '' + formatters.format(jsondiffpatch.diff(expected, actual));
-              }
-              return result;
-          },
-      	};
-      }
-    });
+		jasmine.addMatchers({
+			toEqualJSON: function(util, customEqualityTesters) {
+				return {
+					compare: function(actual, expected) {
+						var result = {};
+						
+						actual = JSON.parse(JSON.stringify(actual));
+						expected = JSON.parse(JSON.stringify(expected));
+						result.pass = util.equals(actual, expected, customEqualityTesters);
+						result.name = 'JSON objects ' + (result.pass ? '' :  'don\'t') + ' match';
+
+						if (result.pass) {
+							result.message = 'OMG Big Equal!';
+						} else {
+							result.message = '' + formatters.format(jsondiffpatch.diff(expected, actual));
+						}
+
+						return result;
+					},
+				};
+			}
+		});
 	});
 	
 	it('should parse pia scores', () => {
 		let result = null;
 		let expectedResult = [
-			{
-				measureNumber: 1,
-				notes: [
+			[ // measure 0
+				[ // part 0
 					[ {
 						noteId: 0,
 						noteNumber: 72,
@@ -63,65 +65,59 @@ describe('PIA PEG', () => {
 						octave: 6,
 						duration: 8
 					} ]
+				] ,[ // part 1
+				[ {
+					noteId: 4,
+					noteNumber: 69,
+					name: 'A',
+					octave: 5,
+					duration: 4
+				} ],
+				[ {
+					noteId: 5,
+					noteNumber: 64,
+					name: 'E',
+					octave: 5,
+					duration: 4
+				},
+				{
+					noteId: 6,
+					noteNumber: 69,
+					name: 'A',
+					octave: 5,
+					duration: 4
+				},
+				{
+					noteId: 7,
+					noteNumber: 72,
+					name: 'C',
+					octave: 6,
+					duration: 4
+				} ],
+				[ {
+					noteId: 8,
+					noteNumber: 64,
+					name: 'E',
+					octave: 5,
+					duration: 4
+				},
+				{
+					noteId: 9,
+					noteNumber: 69,
+					name: 'A',
+					octave: 5,
+					duration: 4
+				},
+				{
+					noteId: 10,
+					noteNumber: 72,
+					name: 'C',
+					octave: 6,
+					duration: 4
+				} ]
 				]
-			},
-			{
-				measureNumber: 1,
-				notes: [
-					[ {
-						noteId: 4,
-						noteNumber: 69,
-						name: 'A',
-						octave: 5,
-						duration: 4
-					} ],
-					[ {
-						noteId: 5,
-						noteNumber: 64,
-						name: 'E',
-						octave: 5,
-						duration: 4
-					},
-					{
-						noteId: 6,
-						noteNumber: 69,
-						name: 'A',
-						octave: 5,
-						duration: 4
-					},
-					{
-						noteId: 7,
-						noteNumber: 72,
-						name: 'C',
-						octave: 6,
-						duration: 4
-					} ],
-					[ {
-						noteId: 8,
-						noteNumber: 64,
-						name: 'E',
-						octave: 5,
-						duration: 4
-					},
-					{
-						noteId: 9,
-						noteNumber: 69,
-						name: 'A',
-						octave: 5,
-						duration: 4
-					},
-					{
-						noteId: 10,
-						noteNumber: 72,
-						name: 'C',
-						octave: 6,
-						duration: 4
-					} ]
-				]
-			},
-			{
-				measureNumber: 2,
-				notes: [
+			] , [ // measure 1
+				[ // part 0
 					[ {
 						noteId: 11,
 						noteNumber: 57,
@@ -142,9 +138,9 @@ describe('PIA PEG', () => {
 						name: 'E',
 						octave: 4,
 						duration: 4
-					}]
+					} ]
 				]
-			}
+			]
 		];
 
 		expect(() => {

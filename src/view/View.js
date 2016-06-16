@@ -11,11 +11,12 @@ var $ = require('npm-zepto');
 
 var Store = require('../store/Store.js');
 var API = require('../actions/API.js');
+var createSVGFromScore = require('../lib/renderer/createSVGFromScore.js');
 
 
 // CODE
 
-var initializer, patcher, updateMIDI;
+var initializer, patcher, updateMIDI, updateScore;
 var handleMIDIStateChange, handleMIDIMessage;
 var convertMIDIMessageToNote;
 
@@ -23,12 +24,13 @@ var convertMIDIMessageToNote;
 
 initializer = function initializer(rootElem) {
 	navigator.requestMIDIAccess()
-		       .then( access => Store.dispatch(API.GRANT_MIDI_ACCESS(access)) )
-		       .catch( error => Store.dispatch(API.GRANT_MIDI_ACCESS(error)) );
+	         .then( access => Store.dispatch(API.GRANT_MIDI_ACCESS(access)) )
+	         .catch( error => Store.dispatch(API.GRANT_MIDI_ACCESS(error)) );
 };
 
 patcher = function patcher(rootElem, state) {
 	if (state.MIDI) updateMIDI(rootElem, state.MIDI);
+	if (state.score) updateScore(rootElem, state.score);
 };
 
 // SUB-PATCHERS
@@ -47,6 +49,14 @@ updateMIDI = function updateMIDI(rootElem, stateMIDI) {
 			rootElem.querySelector('b').textContent = 'NO MIDI FOUND';
 		}
 	}
+};
+
+updateScore = function updateScore(rootElem, stateScore) {
+	let newScoreElem = createSVGFromScore(stateScore.measures);
+	let scoreElem = rootElem.querySelector('div#score');
+
+	newScoreElem.setAttribute('id', 'score');
+	rootElem.replaceChild(newScoreElem, scoreElem);
 };
 
 // EVENT HANDLERS
