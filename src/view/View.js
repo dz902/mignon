@@ -9,9 +9,10 @@ var $ = require('npm-zepto');
 
 // INTERNAL DEPENDECY
 
-var Store = require('../store/Store.js');
-var API = require('../actions/API.js');
-var createSVGFromScore = require('../lib/renderer/createSVGFromScore.js');
+var styles = require('./styles/main.sass');
+var Store  = require('../store/Store.js');
+var API    = require('../actions/API.js');
+var createSVGFromScore = require('../lib/renderers/createSVGFromScore.js');
 
 
 // CODE

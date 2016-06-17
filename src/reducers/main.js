@@ -19,7 +19,8 @@ const reducerMap = {
 	GRANT_MIDI_ACCESS: grantMIDIAccess,
 	LIST_MIDI_INPUTS: updateMIDIInputs,
 	UPDATE_MIDI_INPUT: updateMIDIInputs,
-	TRACK_MIDI_NOTE: trackMIDINote
+	TRACK_MIDI_NOTE: trackMIDINote,
+	LOAD_SCORE: loadScore
 };
 
 const reducer = handleActions(reducerMap);
@@ -28,7 +29,10 @@ const reducer = handleActions(reducerMap);
 // SUB-REDUCERS
 
 function startApp(state, action) {
-	return state;
+	return loop(
+		state,
+		Effects.constant(API.LOAD_SCORE(require('raw!../../var/scores/test.pia')))
+	);
 }
 
 function grantMIDIAccess(state, action) {
@@ -157,6 +161,16 @@ function trackMIDINote(state, action) {
 	} else {
 		stateChanges = {};
 	}
+
+	return createState(state, stateChanges);
+}
+
+function loadScore(state, action) {
+	let stateChanges = {
+		score: {
+			measures: action.payload
+		}
+	};
 
 	return createState(state, stateChanges);
 }

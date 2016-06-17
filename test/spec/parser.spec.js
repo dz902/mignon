@@ -6,7 +6,7 @@ var jsondiffpatch = require('jsondiffpatch');
 var formatters = require('jsondiffpatch/src/formatters/console');
 var trace = require('pegjs-backtrace');
 
-var parser = require('../../src/lib/parser/pia.js');
+var parser = require('../../src/lib/parsers/pia.js');
 
 describe('PIA PEG', () => {
 	beforeEach(() => {
@@ -44,26 +44,26 @@ describe('PIA PEG', () => {
 						noteNumber: 72,
 						name: 'C',
 						octave: 6,
-						duration: 4
+						duration: '4'
 					} ],
 					[ {
 						noteId: 1,
 						name: 'O',
-						duration: 8
+						duration: '8'
 					} ],
 					[ {
 						noteId: 2,
 						noteNumber: 75,
 						name: 'Eb',
 						octave: 6,
-						duration: 4
+						duration: '4'
 					} ],
 					[ {
 						noteId: 3,
 						noteNumber: 81,
 						name: 'A',
 						octave: 6,
-						duration: 8
+						duration: '8'
 					} ]
 				] ,[ // part 1
 				[ {
@@ -71,49 +71,49 @@ describe('PIA PEG', () => {
 					noteNumber: 69,
 					name: 'A',
 					octave: 5,
-					duration: 4
+					duration: '4'
 				} ],
 				[ {
 					noteId: 5,
 					noteNumber: 64,
 					name: 'E',
 					octave: 5,
-					duration: 4
+					duration: '4'
 				},
 				{
 					noteId: 6,
 					noteNumber: 69,
 					name: 'A',
 					octave: 5,
-					duration: 4
+					duration: '4'
 				},
 				{
 					noteId: 7,
 					noteNumber: 72,
 					name: 'C',
 					octave: 6,
-					duration: 4
+					duration: '4'
 				} ],
 				[ {
 					noteId: 8,
 					noteNumber: 64,
 					name: 'E',
 					octave: 5,
-					duration: 4
+					duration: '4'
 				},
 				{
 					noteId: 9,
 					noteNumber: 69,
 					name: 'A',
 					octave: 5,
-					duration: 4
+					duration: '4'
 				},
 				{
 					noteId: 10,
 					noteNumber: 72,
 					name: 'C',
 					octave: 6,
-					duration: 4
+					duration: '4'
 				} ]
 				]
 			] , [ // measure 1
@@ -123,29 +123,29 @@ describe('PIA PEG', () => {
 						noteNumber: 57,
 						name: 'A',
 						octave: 4,
-						duration: 4
+						duration: '4'
 					} ],
 					[ {
 						noteId: 12,
 						noteNumber: 48,
 						name: 'C',
 						octave: 4,
-						duration: 4
+						duration: '4'
 					},
 					{
 						noteId: 13,
 						noteNumber: 52,
 						name: 'E',
 						octave: 4,
-						duration: 4
+						duration: '4'
 					} ]
 				]
 			]
 		];
 
 		expect(() => {
-			result = parser.parse(`1| ^ c/4 o/8 eb/4 a/8 |
-			                       1| = a/4 e-a-c/4 e-a-c/4 |
+			result = parser.parse(`1| ^ c4 o8 eb4 a8 |
+			                       1| = a4 e-a-c4 e-a-c4 |
 			                       2| _ a c-e`);
 		}).not.toThrow();
 		

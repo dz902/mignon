@@ -6,16 +6,21 @@
 const createAction = require('redux-actions').createAction;
 
 
+// INTERNAL DEPENDENCY
+
+const parser = require('../lib/parsers/pia.js');
+
 // CODE
 
 const API = {
-	START_APP: createAction('START_APP'),
-	GRANT_MIDI_ACCESS: createAction('GRANT_MIDI_ACCESS'),
-	POLL_MIDI_INPUT: createAction('POLL_MIDI_INPUT'),
-	UPDATE_MIDI_INPUT: createAction('UPDATE_MIDI_INPUT'),
-	LIST_MIDI_INPUTS: createAction('LIST_MIDI_INPUTS'),
+	START_APP: null,
+	GRANT_MIDI_ACCESS: null,
+	POLL_MIDI_INPUT: null,
+	UPDATE_MIDI_INPUT: null,
+	LIST_MIDI_INPUTS: null,
 	RECEIVE_MIDI_NOTE: null,
 	TRACK_MIDI_NOTE: null,
+	LOAD_SCORE: createAction('LOAD_SCORE', rawScore => parser.parse(rawScore)),
 	LOG: null
 };
 

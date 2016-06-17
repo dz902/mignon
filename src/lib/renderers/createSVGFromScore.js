@@ -31,17 +31,37 @@ function createSVGFromScore(scoreMeasures) {
 
 			part.forEach((noteGroup) => {
 				let vexTickable = new Flow.StaveNote({
-					keys: noteGroup.reduce((r,n) => { r.push(n.name); return r; }, []),
-					duration: noteGroup[0].duration,
+					keys: noteGroup.reduce((r,n) => {
+						if (n.name === 'O') {
+							r.push('B/4');
+						} else {
+							r.push(`${n.name}/${n.octave}`);
+						}
+
+						return r;
+					}, []),
+					duration: noteGroup[0].duration.replace(/\./g, 'd') + (noteGroup[0].name === 'O' ? 'r' : ''),
 					octave_shift: 1,
 					auto_stem: true,
 					__data: noteGroup
 				});
-				
-				noteGroup.forEach(function(note, index) {
+
+				noteGroup.forEach((note, index) => {
+					if (note.octave < 5) {
+						vexTickable.setStave(bottomStave);
+					} else {
+						vexTickable.setStave(topStave);
+					}
+
 					if (note.name.length > 1) {
 	 					vexTickable.addAccidental(index, new Flow.Accidental(note.name.substr(1)));
 					}
+
+					let dots = optional( note.duration.match(/\./) );
+
+					dots.bind(d => d.forEach(() => {
+						vexTickable.addDotToAll();
+					}));
 				});
 				
 				vexPart.addTickable(vexTickable);
@@ -55,15 +75,31 @@ function createSVGFromScore(scoreMeasures) {
 		});
 
   	formatter.joinVoices(vexParts)
-		         .formatToStave(vexParts, topStave);
-                	
-		vexParts.forEach(p => p.draw(context, topStave));
+		         .format(vexParts, 500);
+
+		vexParts.forEach(p => {
+			p.draw(context);
+		});
 		
 		// measure ends
 	});
 
 	
 	return div;
+}
+
+function optional(obj) {
+	function bind(obj, func) {
+		if (obj === null || obj === undefined || Number.isNaN(obj)) {
+			return optional(obj);
+		}
+
+		return optional(func(obj));
+	}
+
+	return {
+		bind: bind.bind(null, obj)
+	};
 }
 
 module.exports = createSVGFromScore;

@@ -1,7 +1,7 @@
 {
 	const STEP_NUMBER = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 	var currentOctave = 5;
-	var currentDuration = 4;
+	var currentDuration = '4';
 	var accidentalRecord = []; // stepNumber: { octave: 4 }
 	var noteIdCounter = 0, lastNoteNumber = 0;
 	
@@ -90,7 +90,7 @@ Octave "octave" =
 		if (octave === '=') {
 			octave = 5;
 		} else if (octave.length <= 5) {
-			octave = octave.length * (octave[0] === '^' ? 1 : -1) + 5
+			octave = currentOctave + octave.length * (octave[0] === '^' ? 1 : -1);
 		} else {
 			expected(`octave indicator, got "${octave}"`);
 		}
@@ -142,8 +142,16 @@ NoteName "note-name" =
 Rest "rest" =
 	rest:"o" { return rest.toUpperCase(); }
 
-Duration =
-	"/" duration:("32" / "16" / "8" / "4" / "2" / "1") { return parseInt(duration, 10); }
+Duration "duration" =
+	duration:("32" / "16" / "8" / "4" / "2" / "1") dots:"."* { 
+		dots = dots === null ? '' : dots;
+
+		if (dots.length > 3) {
+			expected('3 dots maximum.');
+		}
+
+		return duration + dots;
+	}
 
 NonZeroInt =
 	[1-9] Int* { return parseInt(text(), 10); }
