@@ -1,13 +1,14 @@
 {
 	const STEP_NUMBER = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-	var currentOctave = 5;
-	var currentDuration = '4';
-	var accidentalRecord = []; // stepNumber: { octave: 4 }
+	var currentMeasureNumber = 1;
+	var currentOctave        = 5;
+	var currentDuration      = '4';
+	var accidentalRecord     = []; // stepNumber: { octave: 4 }
 	var noteIdCounter = 0, lastNoteNumber = 0;
 	
 	function addPartToMeasures(part, measures) {
 		measures[part.measureNumber-1] = measures[part.measureNumber-1] || [];
-		measures[part.measureNumber-1].push(part.notes);
+		measures[part.measureNumber-1].push(part);
 	}
 
 	function createNote(name, octave, duration, isConsecutive) {
@@ -23,16 +24,6 @@
 			let stepName = name[0];
 			let accidental = name[1];
 			let noteNumber = STEP_NUMBER.findIndex(v => v === stepName);
-
-			if (isConsecutive) {
-				if (lastNoteNumber > noteNumber) {
-					octave += 1;
-				}
-					
-				lastNoteNumber = noteNumber;
-			} else {
-				resetLastNote();
-			}
 
 			switch (accidental) {
 				case 'b':
@@ -56,9 +47,22 @@
 		
 			note.octave = octave;
 			note.noteNumber = noteNumber + octave * 12;
+			
+			if (isConsecutive) {
+				if (note.noteNumber < lastNoteNumber) {
+					note.octave += 1;
+					note.noteNumber += 12;
+				}
+
+				lastNoteNumber = note.noteNumber;
+			} else {
+				resetLastNote();
+			}
 		}
 	
 		noteIdCounter += 1;
+		currentOctave = note.octave;
+		currentDuration = note.duration;
 	
 		return note;
 	}
@@ -77,9 +81,11 @@ Start =
 	}
 
 Part "part" =
-	measureNumber:NonZeroInt "|" _ notes:Note+ _ "|"? _ {
+	measureNumber:(NonZeroInt / "-") stave:("T" / "B") clef:("T" / "B") "|" _ notes:Note+ _ "|"? _ {
 		return {
-			measureNumber: measureNumber,
+			measureNumber: measureNumber === '-' ? currentMeasureNumber : measureNumber,
+			stave: stave == 'T' ? 'TOP' : 'BOTTOM',
+			clef: clef == 'B' ? 'BASS' : 'TREBLE',
 			notes: notes
 		}
 	}
@@ -95,9 +101,23 @@ Octave "octave" =
 			expected(`octave indicator, got "${octave}"`);
 		}
 		
-		currentOctave = octave;
-
 		return octave;
+	}
+
+Token =
+	Command
+	/ Note
+
+Command "command" =
+	BeamCommand
+
+BeamCommand =
+	_ "beam:" beat:NonZeroInt "/" noteValue:NonZeroInt  _ {
+		return {
+			command: 'beam',
+			beat: beat,
+			noteValue: noteValue
+		};
 	}
 
 Note "note" =

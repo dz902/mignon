@@ -4,11 +4,8 @@
 // EXTERNAL DEPENDENCY
 
 const createAction = require('redux-actions').createAction;
+const createModelFromScore = require('../lib/parsers/createModelFromScore.js');
 
-
-// INTERNAL DEPENDENCY
-
-const parser = require('../lib/parsers/pia.js');
 
 // CODE
 
@@ -20,7 +17,7 @@ const API = {
 	LIST_MIDI_INPUTS: null,
 	RECEIVE_MIDI_NOTE: null,
 	TRACK_MIDI_NOTE: null,
-	LOAD_SCORE: createAction('LOAD_SCORE', rawScore => parser.parse(rawScore)),
+	LOAD_SCORE: createAction('LOAD_SCORE', score => ({ data: score, model: createModelFromScore(score) })),
 	LOG: null
 };
 

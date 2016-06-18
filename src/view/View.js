@@ -53,7 +53,7 @@ updateMIDI = function updateMIDI(rootElem, stateMIDI) {
 };
 
 updateScore = function updateScore(rootElem, stateScore) {
-	let newScoreElem = createSVGFromScore(stateScore.measures);
+	let newScoreElem = createSVGFromScore(stateScore.data);
 	let scoreElem = rootElem.querySelector('div#score');
 
 	newScoreElem.setAttribute('id', 'score');

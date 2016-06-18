@@ -1,11 +1,22 @@
-/* jslint browser: true, node: true, sub: true, esversion: 6 */
+/* jslint browser: true, node: true, sub: true, multistr: true, esversion: 6 */
 'use strict';
 
-var Flow = require('vexflow').Flow;
+var verovio = require('../vendor/verovio-toolkit.js');
+var toolkit = new verovio.toolkit();
 
-function createSVGFromScore(scoreMeasures) {
+function createSVGFromScore(scoreData) {
 	let div = document.createElement('div');
-	let renderer  = new Flow.Renderer(div, Flow.Renderer.Backends.SVG);
+
+	let svg = toolkit.renderData( 
+		scoreData, 
+		JSON.stringify( {
+			font: 'Bravura'
+		} ) 
+	);
+
+   div.innerHTML = svg;
+
+/*	let renderer  = new Flow.Renderer(div, Flow.Renderer.Backends.SVG);
 	let context   = renderer.getContext();
 	let formatter = new Flow.Formatter();
 
@@ -23,14 +34,15 @@ function createSVGFromScore(scoreMeasures) {
 
 	[topStave, bottomStave, brace, leftLine, rightLine].forEach(n => n.setContext(context).draw());
 
-	scoreMeasures.forEach((measure) => {
+	scoreParts.forEach((parts) => {
 		let vexParts = [];
 
-		measure.forEach((part) => {
+		parts.forEach((part) => {
 			let vexPart = new Flow.Voice({}).setStrict(false);
 
-			part.forEach((noteGroup) => {
+			part.notes.forEach((noteGroup) => {
 				let vexTickable = new Flow.StaveNote({
+					clef: part.clef.toLowerCase(),
 					keys: noteGroup.reduce((r,n) => {
 						if (n.name === 'O') {
 							r.push('B/4');
@@ -47,7 +59,7 @@ function createSVGFromScore(scoreMeasures) {
 				});
 
 				noteGroup.forEach((note, index) => {
-					if (note.octave < 5) {
+					if (part.stave === 'BOTTOM') {
 						vexTickable.setStave(bottomStave);
 					} else {
 						vexTickable.setStave(topStave);
@@ -69,21 +81,22 @@ function createSVGFromScore(scoreMeasures) {
 				// noteGroup ends
 			});
 
+			formatter.joinVoices([vexPart]);
+			
 			vexParts.push(vexPart);
 
 			// part ends
 		});
 
-  	formatter.joinVoices(vexParts)
-		         .format(vexParts, 500);
+		formatter.format(vexParts, 500);
 
-		vexParts.forEach(p => {
+		vexParts.forEach((p, idx) => {
 			p.draw(context);
 		});
 		
-		// measure ends
+		// parts ends
 	});
-
+*/
 	
 	return div;
 }

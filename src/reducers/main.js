@@ -31,7 +31,7 @@ const reducer = handleActions(reducerMap);
 function startApp(state, action) {
 	return loop(
 		state,
-		Effects.constant(API.LOAD_SCORE(require('raw!../../var/scores/test.pia')))
+		Effects.constant(API.LOAD_SCORE(require('raw!../../var/scores/chopin.mei')))
 	);
 }
 
@@ -166,9 +166,11 @@ function trackMIDINote(state, action) {
 }
 
 function loadScore(state, action) {
+	let scoreDataAndModel = action.payload;
 	let stateChanges = {
 		score: {
-			measures: action.payload
+			data: scoreDataAndModel.data,
+			model: scoreDataAndModel.model
 		}
 	};
 

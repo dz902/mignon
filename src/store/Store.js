@@ -26,12 +26,8 @@ var { reducer } = require('../reducers/main.js');
 			noteBuffer: []
 		},
 		score: {
-			measures: [ // measure
-				[ // parts
-					[] // part: notes
-				]
-			],
-			beats: []
+			data: null,
+			model: null
 		},
 		performance: {
 			currentBeat: 0,
