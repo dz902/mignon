@@ -1,12 +1,12 @@
 /* jslint browser: true, node: true, sub: true, multistr: true, esversion: 6 */
 'use strict';
 
-var verovio = require('../vendor/verovio-toolkit.js');
-var toolkit = new verovio.toolkit();
+//var verovio = require('../vendor/verovio-toolkit.js');
+//var toolkit = new verovio.toolkit();
 
 function createSVGFromScore(scoreData) {
 	let div = document.createElement('div');
-
+return div;
 	let svg = toolkit.renderData( 
 		scoreData, 
 		JSON.stringify( {

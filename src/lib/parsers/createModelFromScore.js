@@ -1,7 +1,7 @@
 /* jslint browser: true, node: true, sub: true, multistr: true, esversion: 6 */
 'use strict';
 
-// HELPERS
+const Fraction = require('fraction.js');
 
 var extractAttr = function extractAttr(mark, attrName) {
 	let attr = mark.attributes.getNamedItem(attrName);
@@ -110,6 +110,9 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 	let doc = parser.parseFromString(scoreData, 'application/xml');
 	let staves = qsa(doc, 'music score staff');
 
+	let beatCounters = [];
+	let beats = new Map();
+	
 	let notes = staves.reduce((reduction, staff) => {
 		let staffNumber = parseInt(extractAttr(staff, 'n'), 10);
 		
@@ -136,17 +139,33 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 					throw new Error(`[createModelFromScore] Unknown element type (element: ${mark}).`);
 			}
 
+			let currentBeat = beatCounters[staffNumber] || new Fraction(0);
+
+			if (modelMark.type !== 'rest') {
+				let currentBeatStr = currentBeat.toString();
+				let noteGroupOfCurrentBeat = beats.get(currentBeatStr) || [];
+				
+				noteGroupOfCurrentBeat[modelMark.noteNumber] = modelMark;
+				beats.set(currentBeatStr, noteGroupOfCurrentBeat);
+			}
+
+			beatCounters[staffNumber] = currentBeat.add([1, modelMark.duration]);
+
 			reduction[staffNumber].push(modelMark);
 		});
 
 		return reduction;
 	}, []);
 
-	console.log(notes);
+	beats = Array.from(beats);
+	beats.sort((a, b) => {
+		return (new Fraction(a[0])).compare(b[0]);
+	});
 
-	let groupByBeats = [];
-
-	return doc;
+	return {
+		notes: notes,
+		beats: beats
+	};
 };
 
 module.exports = createModelFromScore;

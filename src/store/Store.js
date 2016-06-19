@@ -22,15 +22,14 @@ var { reducer } = require('../reducers/main.js');
 		MIDI: {
 			access: undefined,
 			selectedInput: undefined,
-			noteSeq: [],
-			noteBuffer: []
 		},
 		score: {
 			data: null,
 			model: null
 		},
 		performance: {
-			currentBeat: 0,
+			noteSeq: [],
+			currentBeat: 0, // for each staff
 			beats: []
 		}
 	};
