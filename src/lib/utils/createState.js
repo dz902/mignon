@@ -3,11 +3,11 @@
 
 var assign = require('./arrayEnhancers/assign');
 
-function createState(state, stateChanges) {
+function createState(state, statePatch) {
 	let newState = assign(state, 
-	                      stateChanges, 
-	                      { stateChanges: null }, // delete previous state changes or will be merged
-	                      { stateChanges: stateChanges });
+	                      statePatch || {}, 
+	                      { statePatch: null }, // delete previous state patch
+	                      { statePatch: statePatch });
 
 	return newState;
 }

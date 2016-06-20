@@ -15,7 +15,7 @@ var { reducer } = require('../reducers/main.js');
 // CODE
 
 	let initialState = {
-		stateChanges: {},
+		statePatch: {},
 		config: {
 			samplingRate: 100, // The Science and Psychology of Music Performance: Creative Strategy for Teaching and Learning pp.295
 		},

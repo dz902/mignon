@@ -37,14 +37,14 @@ function startApp(state, action) {
 }
 
 function grantMIDIAccess(state, action) {
-	let stateChanges = {};
+	let statePatch = {};
 
 	if (action.error) {
 			return state;
 	} else {
 		let access = action.payload;
 
-		stateChanges = {
+		statePatch = {
 			MIDI: {
 				isRequesting: false,
 				access: access,
@@ -52,76 +52,35 @@ function grantMIDIAccess(state, action) {
 			}
 		};
 
-		return createState(state, stateChanges);
+		return createState(state, statePatch);
 	}
 }
 
 function updateMIDIInputs(state, action) {
 	let access = state.MIDI.access;
-	let stateChanges = {
+	let statePatch = {
 		MIDI: {
 			inputs: access.inputs
 		}
 	};
 
-	return createState(state, stateChanges);
+	return createState(state, statePatch);
 }
 
 function trackTimedNote(state, action) {
-	let note = action.payload;
-	let noteSeq    = state.MIDI.noteSeq,
-	    noteBuffer = state.MIDI.noteBuffer,
-	    samplingRate = state.config.samplingRate;
 
-	if (note.type === 'NOTE_OFF') {
-		return state;
-	}
-
-	// set note buffer
-
-	let noteBufferChanges = [];
-	noteBufferChanges[note.noteNumber] = note;
-
-	// normalize note timing to detect chords
-
-	let normalizedNoteTiming = Math.floor(note.receivedTime / samplingRate) * samplingRate;
-	normalizedNoteTiming = Number.parseInt(normalizedNoteTiming);
-	
-	// detect chords and add to note sequences
-	
-	let noteSeqChanges  = [];
-	noteSeqChanges[normalizedNoteTiming] = [];
-	
-	let notesAtSameTiming = noteSeq[normalizedNoteTiming];
-	
-	if (notesAtSameTiming) {
-		noteSeqChanges[normalizedNoteTiming][note.noteNumber] = note;
-	} else {
-		let noteGroup = [];
-		noteGroup[note.noteNumber] = note;
-		noteSeqChanges[normalizedNoteTiming] = noteGroup;
-	}
-
-	let stateChanges = {
-		MIDI: {
-			noteSeq: noteSeqChanges,
-			noteBuffer: noteBufferChanges
-		}
-	};
-
-	return createState(state, stateChanges);
 }
 
 function loadScore(state, action) {
 	let scoreDataAndModel = action.payload;
-	let stateChanges = {
+	let statePatch = {
 		score: {
 			data: scoreDataAndModel.data,
 			model: scoreDataAndModel.model
 		}
 	};
 
-	return createState(state, stateChanges);
+	return createState(state, statePatch);
 }
 
 // HELPERS

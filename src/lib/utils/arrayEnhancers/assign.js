@@ -19,7 +19,7 @@ function assign(target /*, ...resources*/) {
 	let initalValue, keysFunc;
 
 	if (target === null || target === undefined) {
-		throw new Error(`[assign] Target cannot be null or undefined (now: ${String(target)})`);
+		throw new Error(`[assign] Target cannot be null or undefined (given: ${String(target)})`);
 	} else if (target.constructor === Object) {
 		initalValue = {};
 		keysFunc = Object.keys;
@@ -31,7 +31,7 @@ function assign(target /*, ...resources*/) {
 		return args[args.length-1];
 	}
 
-	let result = args.reduce(function(reduction, resource) {
+	let result = args.reduce((reduction, resource) => {
 		if (resource === null || resource === undefined || 
 		    resource.constructor !== target.constructor) {
 			throw new Error(`[assign] Target and resource type do not match.`);
@@ -56,8 +56,6 @@ function assign(target /*, ...resources*/) {
 		
 		return reduction;
 	}, initalValue);
-
-	Object.freeze(result);
 
 	return result;
 }

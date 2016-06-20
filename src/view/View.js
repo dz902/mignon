@@ -4,7 +4,6 @@
 // EXTERNAL DEPENDECY
 
 var createView = require('monkey');
-var $ = require('npm-zepto');
 
 
 // INTERNAL DEPENDECY
@@ -30,6 +29,7 @@ initializer = function initializer(rootElem) {
 };
 
 patcher = function patcher(rootElem, state) {
+	if (!state) return;
 	if (state.MIDI) updateMIDI(rootElem, state.MIDI);
 	if (state.score) updateScore(rootElem, state.score);
 };
@@ -75,7 +75,7 @@ handleMIDIStateChange = function handleMIDIStateChange(connEvt) {
 handleMIDIMessage = function handleMIDIMessage(msgEvt) {
 	let note = convertMIDIMessageToNote(msgEvt);
 
-	if (note.type == 'UNKNOWN') {
+	if (note.type === undefined) {
 		return;
 	}
 	
@@ -91,18 +91,18 @@ convertMIDIMessageToNote = function convertMIDIMessageToNote(msgEvt) {
 	    noteNumber    = msgData[1],
 	    velocity      = msgData[2];
 	let noteMsg = {
-		type: 'UNKNOWN',
+		type: undefined,
 		receivedTime: msgEvt.receivedTime,
 		rawData: msgData
 	};
 
 	if (typeId === 0b1000) {
-		noteMsg.type = 'NOTE_OFF';
+		noteMsg.type = 'note-off';
 	} else if (typeId == 0b1001) {
-		noteMsg.type = (velocity === 0 ? 'NOTE_OFF' : 'NOTE_ON');
+		noteMsg.type = (velocity === 0 ? 'note-off' : 'note-on');
 	}
 
-	if (noteMsg.type != 'UNKNOWN') {
+	if (noteMsg.type === 'note-on' || noteMsg.type === 'note-off') {
 		noteMsg.channelNumber = channelNumber;
 		noteMsg.noteNumber    = noteNumber;
 		noteMsg.velocity      = velocity;

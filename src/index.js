@@ -11,10 +11,10 @@ var View = require('./view/View.js');
 
 View.render('#app', Store.getState());
 
-Store.subscribe(function() {
-	let stateChanges = Store.getState().stateChanges;
+Store.subscribe(() => {
+	let statePatch = Store.getState().statePatch;
 
-	View.patch(stateChanges);
+	View.patch(statePatch);
 });
 
 Store.dispatch({type: 'START_APP'});
