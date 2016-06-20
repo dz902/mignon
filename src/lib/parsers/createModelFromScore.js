@@ -2,58 +2,62 @@
 'use strict';
 
 const Fraction = require('fraction.js');
+const getPitchNames = require('../utils/MIDIHelpers/getPitchNames');
 
-var extractAttr = function extractAttr(mark, attrName) {
-	let attr = mark.attributes.getNamedItem(attrName);
-	return attr === null ? null : attr.value;
+const extractAttr = function extractAttr(mark, attrName) {
+	let attr = mark.getAttribute(attrName);
+	return attr === null || "" ? null : attr;
 };
 
-var extractDuration = function extractDuration(mark) {
+const extractDuration = function extractDuration(mark) {
 	let duration = extractAttr(mark, 'dur');
 
 	return parseInt(duration, 10);
 };
 
-var extractOctave = function extractOctave(mark) {
+const extractOctave = function extractOctave(mark) {
 	let octave = extractAttr(mark, 'oct');
 
 	return parseInt(octave, 10) + 1; // MIDI is one octave higher
 };
 
-var extractID = function extractID(mark) {
+const extractID = function extractID(mark) {
 	return extractAttr(mark, 'xml:id');
 };
 
-var calculateNoteNumber = function calculateNoteNumber(modelNote) {
-	const STEP_NAMES = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'];
+const calculateNoteNumber = function calculateNoteNumber(modelNote, key) {
+	const pitchNames = getPitchNames(key);
 
 	if (modelNote.pitchName === null) {
 		return -1;
 	}
+	
+	let accidental = modelNote.accidental === undefined ? "" : modelNote.accidental;
+	let pitchValue = pitchNames.indexOf(modelNote.pitchName+accidental);
+	
+	if (pitchValue === -1) {
+		pitchValue = pitchNames.indexOf(modelNote.pitchName);
 
-	let accidentalModifier;
-
-	switch (modelNote.accidental) {
-		case 'f':
-			accidentalModifier = -1;
-			break;
-		case 's':
-			accidentalModifier = 1;
-			break;
-		case 'ff':
-			accidentalModifier = -2;
-			break;
-		case 'ss':
-			accidentalModifier = 2;
-			break;
-		default:
-			accidentalModifier = 0;
+		switch (modelNote.accidental) {
+			case 'f':
+				pitchValue -= 1;
+				break;
+			case 's':
+				pitchValue += 1;
+				break;
+			case 'ff':
+				pitchValue -= 2;
+				break;
+			case 'ss':
+				pitchValue += 2;
+				break;
+		}
 	}
 
-	return STEP_NAMES.indexOf(modelNote.pitchName) + modelNote.octave*12 + accidentalModifier;
+	return pitchValue + modelNote.octave*12; // MEI octave is 1 octave lower
 };
 
-var processRest = function processRest(mark) {
+const processRest = function processRest(mark) {
 	let modelRest = processNote(mark);
 
 	modelRest.type = 'rest';
@@ -66,12 +70,12 @@ var processRest = function processRest(mark) {
 	return modelRest;
 };
 
-var processNote = function processNote(mark) {
+const processNote = function processNote(mark, key) {
 	let modelNote = {
 		type: 'note',
 		id: extractID(mark),
 		pitchName: extractAttr(mark, 'pname'),
-		accidental: extractAttr(mark, 'accid.ges'),
+		accidental: extractAttr(mark, 'accid.ges') || undefined,
 		duration: extractDuration(mark),
 		octave: extractOctave(mark),
 		ref: mark
@@ -82,11 +86,11 @@ var processNote = function processNote(mark) {
 	return modelNote;
 };
 
-var processChord = function processChord(mark) {
+const processChord = function processChord(mark, key) {
 	let notes = qsa(mark, 'note');
 
 	notes = notes.map((note) => {
-		return processNote(note);
+		return processNote(note, key);
 	});
 
 	return {
@@ -97,22 +101,38 @@ var processChord = function processChord(mark) {
 	};
 };
 
-var qsa = function qsa(doc, selector) {
+const qsa = function qsa(doc, selector) {
 	return Array.from(doc.querySelectorAll(selector));
+};
+
+const qs = function qs() {
+	let elem = qsa.apply(null, arguments);
+	
+	return elem[0];
 };
 
 
 // MAIN
 
-var createModelFromScore = function createModelFromScore(scoreData) {
+const createModelFromScore = function createModelFromScore(scoreData) {
 	let parser = new DOMParser();
 
 	let doc = parser.parseFromString(scoreData, 'application/xml');
-	let staves = qsa(doc, 'music score staff');
 
-	let beatCounters = [];
-	let beats = new Map();
+	let keyElem = qs(doc, 'work key');
+	let keyPitch = keyElem.getAttribute('pname'),
+	    keyAccidental = keyElem.getAttribute('accid'),
+	    keyMode = keyElem.getAttribute('mode');
+	let key = {
+		keyPitch: keyPitch,
+		keyAccidental: keyAccidental,
+		keyMode: keyMode
+	};
+
+	let beatCounters = [],
+	    beats = new Map();
 	
+	let staves = qsa(doc, 'music score staff');
 	let notes = staves.reduce((reduction, staff) => {
 		let staffNumber = parseInt(extractAttr(staff, 'n'), 10);
 		
@@ -120,7 +140,11 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 			reduction[staffNumber] = [];
 		}
 
-		let marks = qsa(staff, 'layer > rest, layer > chord, layer > note, layer > beam > note');
+		let marks = qsa(staff, `layer > rest, 
+		                        layer > chord, 
+		                        layer > note, 
+		                        layer > beam > chord, 
+		                        layer > beam > note`);
 		
 		marks.forEach((mark) => {
 			let modelMark = {};
@@ -130,10 +154,10 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 					modelMark = processRest(mark);
 					break;
 				case 'chord':
-					modelMark = processChord(mark);
+					modelMark = processChord(mark, key);
 					break;
 				case 'note':
-					modelMark = processNote(mark);
+					modelMark = processNote(mark, key);
 					break;
 				default:
 					throw new Error(`[createModelFromScore] Unknown element type (element: ${mark}).`);
@@ -143,13 +167,18 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 
 			if (modelMark.type !== 'rest') {
 				let currentBeatStr = currentBeat.toString();
+				let notes = modelMark.type === 'chord' ? modelMark.notes : [modelMark]; // treat note as chord for easy looping
+				
 				let noteGroupOfCurrentBeat = beats.get(currentBeatStr) || [];
 				
-				noteGroupOfCurrentBeat[modelMark.noteNumber] = modelMark;
+				notes.forEach((note) => {
+					noteGroupOfCurrentBeat[note.noteNumber] = note;
+				});
+
 				beats.set(currentBeatStr, noteGroupOfCurrentBeat);
 			}
 
-			beatCounters[staffNumber] = currentBeat.add([1, modelMark.duration]);
+			beatCounters[staffNumber] = currentBeat.add([1, modelMark.duration]); // duration as denominator
 
 			reduction[staffNumber].push(modelMark);
 		});
@@ -163,6 +192,7 @@ var createModelFromScore = function createModelFromScore(scoreData) {
 	});
 
 	return {
+		doc: doc,
 		notes: notes,
 		beats: beats
 	};
