@@ -5,7 +5,7 @@
 var { Effects, loop } = require('redux-loop');
 
 var API = require('../../src/actions/API.js');
-var { reducer, reducerMap } = require('../../src/reducers/main.js');
+var reducer = require('../../src/reducers/main.js');
 /*
 
 	START_APP: createAction('START_APP'),
@@ -17,11 +17,5 @@ var { reducer, reducerMap } = require('../../src/reducers/main.js');
 	LOG: null
 */
 describe('START_APP', () => {
-	it('should not alter state', () => {
-		let result = reducer({whatever: 'whatever'}, API.START_APP());
-		let expected = {whatever: 'whatever'};
-		
-		//expect(result).toEqual(expected);
-	});
 });
 

@@ -1,14 +1,15 @@
 /* jslint browser: true, node: true, sub: true, esversion: 6 */
-/* globals jasmine, beforeEach, describe, it, expect */
+/* globals jasmine, beforeEach, describe, it, expect, XMLDocument */
 'use strict';
 
-var jsondiffpatch = require('jsondiffpatch');
-var formatters = require('jsondiffpatch/src/formatters/console');
-var trace = require('pegjs-backtrace');
+const jsondiffpatch = require('jsondiffpatch');
+const formatters = require('jsondiffpatch/src/formatters/console');
 
-var parser = require('../../src/lib/parsers/pia.js');
+const API = require('../../src/actions/API.js');
+const action = API.LOAD_SCORE(require('raw!../../var/scores/chopin.mei'));
+const scoreModel = action.payload ? action.payload.model : null;
 
-describe('PIA PEG', () => {
+describe('LOAD_SCORE', () => {
 	beforeEach(() => {
 		jasmine.addMatchers({
 			toEqualJSON: function(util, customEqualityTesters) {
@@ -34,121 +35,37 @@ describe('PIA PEG', () => {
 		});
 	});
 	
-	it('should parse pia scores', () => {
-		let result = null;
-		let expectedResult = [
-			[ // measure 0
-				[ // part 0
-					[ {
-						noteId: 0,
-						noteNumber: 72,
-						name: 'C',
-						octave: 6,
-						duration: '4'
-					} ],
-					[ {
-						noteId: 1,
-						name: 'O',
-						duration: '8'
-					} ],
-					[ {
-						noteId: 2,
-						noteNumber: 75,
-						name: 'Eb',
-						octave: 6,
-						duration: '4'
-					} ],
-					[ {
-						noteId: 3,
-						noteNumber: 81,
-						name: 'A',
-						octave: 6,
-						duration: '8'
-					} ]
-				] ,[ // part 1
-				[ {
-					noteId: 4,
-					noteNumber: 69,
-					name: 'A',
-					octave: 5,
-					duration: '4'
-				} ],
-				[ {
-					noteId: 5,
-					noteNumber: 64,
-					name: 'E',
-					octave: 5,
-					duration: '4'
-				},
-				{
-					noteId: 6,
-					noteNumber: 69,
-					name: 'A',
-					octave: 5,
-					duration: '4'
-				},
-				{
-					noteId: 7,
-					noteNumber: 72,
-					name: 'C',
-					octave: 6,
-					duration: '4'
-				} ],
-				[ {
-					noteId: 8,
-					noteNumber: 64,
-					name: 'E',
-					octave: 5,
-					duration: '4'
-				},
-				{
-					noteId: 9,
-					noteNumber: 69,
-					name: 'A',
-					octave: 5,
-					duration: '4'
-				},
-				{
-					noteId: 10,
-					noteNumber: 72,
-					name: 'C',
-					octave: 6,
-					duration: '4'
-				} ]
-				]
-			] , [ // measure 1
-				[ // part 0
-					[ {
-						noteId: 11,
-						noteNumber: 57,
-						name: 'A',
-						octave: 4,
-						duration: '4'
-					} ],
-					[ {
-						noteId: 12,
-						noteNumber: 48,
-						name: 'C',
-						octave: 4,
-						duration: '4'
-					},
-					{
-						noteId: 13,
-						noteNumber: 52,
-						name: 'E',
-						octave: 4,
-						duration: '4'
-					} ]
-				]
-			]
-		];
+	describe('Action', () => {
+		it('should deliver score model', () => {
+			expect(scoreModel.constructor).toBe(Object);
+		});
 
-		expect(() => {
-			result = parser.parse(`1| ^ c4 o8 eb4 a8 |
-			                       1| = a4 e-a-c4 e-a-c4 |
-			                       2| _ a c-e`);
-		}).not.toThrow();
+		it('should give doc, beats and notes', () => {
+			expect(scoreModel.doc.constructor).toBe(XMLDocument);
+			expect(scoreModel.beats.constructor).toBe(Array);
+			expect(scoreModel.notes.constructor).toBe(Array);
+		});
+
+		it('should group notes into 852 beats', () => {
+			expect(scoreModel.beats.length).toBe(852);
+		});
+
+		it('should group notes into 2 staves', () => {
+			expect(scoreModel.notes.length).toBe(3); // counting from 1
+		});
+
+		it('should group 365 notes into 1st staff', () => {
+			expect(scoreModel.notes[1].length).toBe(365);
+		});
 		
-		expect(result).toEqualJSON(expectedResult);
+		it('should group 795 notes into 2nd staff', () => {
+			expect(scoreModel.notes[2].length).toBe(795);
+		});
+		
+		it('should group A-flat (56) and F (65) into 3rd beat', () => {
+			expect(scoreModel.beats[2][1]).toEqual(jasmine.anything());
+			expect(scoreModel.beats[2][1][56]).toEqual(jasmine.anything());
+			expect(scoreModel.beats[2][1][65]).toEqual(jasmine.anything());
+		});
 	});
 });

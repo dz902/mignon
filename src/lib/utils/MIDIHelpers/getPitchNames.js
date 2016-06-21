@@ -5,16 +5,16 @@ const getPitchNames = function getPitchNames(key) {
 	let sharpScale = ['c', 'cs', 'd', 'ds', 'e', 'f', 'fs', 'g', 'gs', 'a', 'as', 'b'];
 	let flatScale  = ['c', 'df', 'd', 'ef', 'e', 'f', 'gf', 'g', 'gf', 'a', 'bf', 'b'];
 
-	let { keyPitch, keyAccidental, keyMode } = key || {};
+	let { pitchName, accidental, mode } = key || {};
 
-	if (keyPitch === 'f') {
+	if (pitchName === 'f') {
 		return flatScale;
-	} else if (keyAccidental === 's') {
+	} else if (accidental === 's') {
 		return sharpScale;
 	} else {
-		if (keyMode === 'major' && keyPitch === 'f') {
+		if (mode === 'major' && pitchName === 'f') {
 			return flatScale;
-		} else if (keyMode === 'minor' && ['d', 'g', 'c', 'f'].indexOf(keyPitch) !== -1) {
+		} else if (mode === 'minor' && ['d', 'g', 'c', 'f'].indexOf(pitchName) !== -1) {
 			return flatScale;
 		} else {
 			return sharpScale;

@@ -85,7 +85,4 @@ function loadScore(state, action) {
 
 // HELPERS
 
-module.exports = {
-	reducerMap: reducerMap,
-	reducer: reducer
-};
+module.exports = reducer;

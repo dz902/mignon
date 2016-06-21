@@ -25,6 +25,57 @@ const extractID = function extractID(mark) {
 	return extractAttr(mark, 'xml:id');
 };
 
+const extractKey = function extractKey(elem) {
+	let key = {
+		pitchName: extractAttr(elem, 'key.pname'),
+		accidental: extractAttr(elem, 'key.accid'),
+		mode: extractAttr(elem, 'key.mode')
+	};
+
+	if (!key.pitchName) {
+		key.signature = extractAttr(elem, 'key.sig');
+
+		if (!key.signature) {
+			return null;
+		}
+
+		if (key.signature.match(/^mixed|0|[1-7][sf]$/) === null) {
+			throw new Error(`[extractKey] Malformed key signature (signature: ${key.signature}).`);
+		}
+		
+		if (key.signature === 'mixed') {
+			throw new Error('[extractKey] Mixed key is not supported.');
+		}
+
+		if (key.signature === '0') {
+			key.pitchName = 'c';
+			return key;
+		}
+
+		let numberOfAccidentals = parseInt(key.signature[0], 10)+1;
+
+		if (key.signature[1] === 's') {
+			let sharpKeys = [undefined, 'g', 'd', 'a', 'e', 'b', 'f', 'c'];
+
+			key.pitchName = sharpKeys[numberOfAccidentals];
+
+			if (numberOfAccidentals >= 6) {
+				key.accidental = 's'; // unusual but possible F# and C#
+			}
+		} else {
+			let flatKeys = [undefined, 'f', 'b', 'e', 'a', 'd', 'g', 'c'];
+			
+			key.pitchName = flatKeys[numberOfAccidentals];
+
+			if (numberOfAccidentals >= 2) {
+				key.accidental = 'f';
+			}
+		}
+		
+		return key;
+	}
+};
+
 const calculateNoteNumber = function calculateNoteNumber(modelNote, key) {
 	const pitchNames = getPitchNames(key);
 
@@ -78,10 +129,11 @@ const processNote = function processNote(mark, key) {
 		accidental: extractAttr(mark, 'accid.ges') || undefined,
 		duration: extractDuration(mark),
 		octave: extractOctave(mark),
+		key: key,
 		ref: mark
 	};
 	
-	modelNote.noteNumber = calculateNoteNumber(modelNote);
+	modelNote.noteNumber = calculateNoteNumber(modelNote, key);
 
 	return modelNote;
 };
@@ -119,15 +171,8 @@ const createModelFromScore = function createModelFromScore(scoreData) {
 
 	let doc = parser.parseFromString(scoreData, 'application/xml');
 
-	let keyElem = qs(doc, 'work key');
-	let keyPitch = keyElem.getAttribute('pname'),
-	    keyAccidental = keyElem.getAttribute('accid'),
-	    keyMode = keyElem.getAttribute('mode');
-	let key = {
-		keyPitch: keyPitch,
-		keyAccidental: keyAccidental,
-		keyMode: keyMode
-	};
+	let keyElem = qs(doc, 'music scoreDef');
+	let key = extractKey(keyElem);
 
 	let beatCounters = [],
 	    beats = new Map();

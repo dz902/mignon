@@ -66,12 +66,19 @@ function trackMIDINote(state, action) {
 		let pitchName = getPitchNameFromNoteNumber(MIDINote.noteNumber);
 		let octave    = Math.floor(MIDINote.noteNumber / 12);
 
-		let extraNote = first(targetNotes).ref.cloneNode();
+		let extraNoteElem = first(targetNotes).ref.cloneNode();
 
-		extraNote.setAttribute('pname', pitchName);
-		extraNote.setAttribute('oct', octave-1);
-		extraNote.setAttribute('xml:id', 'dextra'+performance.now().toString().replace(/\./, ''));
-		extraNote.setAttribute('perf_extra', 'true');
+		extraNoteElem.setAttribute('pname', pitchName[0]);
+		extraNoteElem.setAttribute('oct', octave-1);
+		extraNoteElem.setAttribute('xml:id', 'dextra'+performance.now().toString().replace(/\./, ''));
+		extraNoteElem.setAttribute('perf_extra', 'true');
+		
+		if (pitchName[1]) {
+			extraNoteElem.setAttribute('accid', pitchName[1]);
+		}
+		
+		let extraNote = Object.assign({}, MIDINote);
+		extraNote.ref = extraNoteElem;
 		
 		// find a slot to insert extra note
 		
@@ -96,21 +103,25 @@ function trackMIDINote(state, action) {
 		if (notTooFar) {
 			let nearestNoteElem = nearestNote.ref;
 			let nearestNoteIsChordNote = (nearestNoteElem.parentElement.tagName === 'chord');
+			let chordNoteElem;
 
 			if (nearestNoteIsChordNote) {
-				nearestNoteElem.parentElement.appendChild(extraNote);
+				chordNoteElem = nearestNoteElem.parentElement;
+				chordNoteElem.appendChild(extraNoteElem);
 			} else {
 				let noteParent = nearestNoteElem.parentElement; // could be staff layer or beam
-				let chordNoteElem = document.createElement('chord');
+				chordNoteElem = document.createElement('chord');
 				
 				chordNoteElem.setAttribute('dur', nearestNoteElem.getAttribute('dur'));
 				chordNoteElem.setAttribute('stem.dir', nearestNoteElem.getAttribute('stem.dir'));
-				chordNoteElem.appendChild(extraNote);
+				chordNoteElem.appendChild(extraNoteElem);
 
 				noteParent.replaceChild(chordNoteElem, nearestNoteElem);
 				
 				chordNoteElem.appendChild(nearestNoteElem); // append after replace, preventing auto-remove
 			}
+		} else {
+			// TODO: find a way to mark the position so user can be warned
 		}
 		
 		trackedNote = {
@@ -135,10 +146,10 @@ function trackMIDINote(state, action) {
 		}
 	};
 
+	// TODO: temporary
+
 	let xmlSerializer = new XMLSerializer();
 	let xmlString = xmlSerializer.serializeToString(state.score.model.doc);
-	document.getElementById('test').textContent = xmlString;
-	document.getElementById('xml').innerHTML = xmlString;
 	
 	return loop(createState(state, statePatch),
 	            Effects.constant(API.LOAD_SCORE(xmlString)));

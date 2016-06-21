@@ -9,6 +9,10 @@ const createModelFromScore = require('../lib/parsers/createModelFromScore.js');
 
 // CODE
 
+const actionLoadScore = createAction('LOAD_SCORE', score => {
+	return { data: score, model: createModelFromScore(score) };
+});
+
 const API = {
 	START_APP: null,
 	GRANT_MIDI_ACCESS: null,
@@ -17,7 +21,7 @@ const API = {
 	LIST_MIDI_INPUTS: null,
 	RECEIVE_MIDI_NOTE: null,
 	TRACK_MIDI_NOTE: null,
-	LOAD_SCORE: createAction('LOAD_SCORE', score => ({ data: score, model: createModelFromScore(score) })),
+	LOAD_SCORE: actionLoadScore,
 	LOG: null
 };
 

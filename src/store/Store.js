@@ -10,7 +10,7 @@ var reduxLogger  = require('redux-logger')();
 
 // INTERNAL DEPENDENCY
 
-var { reducer } = require('../reducers/main.js');
+var reducer = require('../reducers/main.js');
 
 // CODE
 

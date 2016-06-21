@@ -3,15 +3,15 @@
 
 // EXTERNAL DEPENDECY
 
-var createView = require('monkey');
+const createView = require('monkey');
 
 
 // INTERNAL DEPENDECY
 
-var styles = require('./styles/main.sass');
-var Store  = require('../store/Store.js');
-var API    = require('../actions/API.js');
-var createSVGFromScore = require('../lib/renderers/createSVGFromScore.js');
+const styles = require('./styles/main.sass');
+const Store  = require('../store/Store');
+const API    = require('../actions/API');
+const createSVGFromScore = require('../lib/renderers/createSVGFromScore');
 
 
 // CODE
@@ -20,6 +20,18 @@ var initializer, patcher, updateMIDI, updateScore;
 var handleMIDIStateChange, handleMIDIMessage;
 var convertMIDIMessageToNote;
 
+const updatePerformance = function updatePerformance(rootElem, statePerf) {
+	setTimeout(() => {
+		let svg = rootElem.querySelector('div#score > svg');
+		
+		statePerf.trackedNotes.forEach((trackedNote) => {
+			let note = svg.querySelector(`#${trackedNote.note.ref.getAttribute('xml:id')}`);
+			
+			note.setAttribute('perf_extra', trackedNote.extra);
+			note.setAttribute('perf_pressed', trackedNote.pressed);
+		});
+	}, 1000);
+};
 // INIT & PATCHER
 
 initializer = function initializer(rootElem) {
@@ -32,6 +44,7 @@ patcher = function patcher(rootElem, state) {
 	if (!state) return;
 	if (state.MIDI) updateMIDI(rootElem, state.MIDI);
 	if (state.score) updateScore(rootElem, state.score);
+	if (state.performance) updatePerformance(rootElem, state.performance);
 };
 
 // SUB-PATCHERS
@@ -57,6 +70,7 @@ updateScore = function updateScore(rootElem, stateScore) {
 	let scoreElem = rootElem.querySelector('div#score');
 
 	newScoreElem.setAttribute('id', 'score');
+
 	rootElem.replaceChild(newScoreElem, scoreElem);
 };
 
